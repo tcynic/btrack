@@ -2,12 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"log"
+
+	"btrack/internal/database"
 )
 
 // App struct
 type App struct {
 	ctx context.Context
+	db  *sql.DB
 }
 
 // NewApp creates a new App application struct
@@ -19,9 +23,21 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	// Initialize database
+	db, err := database.Initialize()
+	if err != nil {
+		log.Printf("Failed to initialize database: %v", err)
+		return
+	}
+	a.db = db
+	log.Println("Database initialized successfully")
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+// shutdown is called when the app is closing
+func (a *App) shutdown(ctx context.Context) {
+	if a.db != nil {
+		a.db.Close()
+		log.Println("Database connection closed")
+	}
 }
