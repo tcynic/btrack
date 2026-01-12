@@ -6,8 +6,32 @@ export function CalculateDistribution(arg1) {
   return window['go']['main']['App']['CalculateDistribution'](arg1);
 }
 
+export function CreateGoal(arg1) {
+  return window['go']['main']['App']['CreateGoal'](arg1);
+}
+
+export function CreateMeeting(arg1) {
+  return window['go']['main']['App']['CreateMeeting'](arg1);
+}
+
+export function CreateNote(arg1) {
+  return window['go']['main']['App']['CreateNote'](arg1);
+}
+
 export function CreateProject(arg1) {
   return window['go']['main']['App']['CreateProject'](arg1);
+}
+
+export function DeleteGoal(arg1) {
+  return window['go']['main']['App']['DeleteGoal'](arg1);
+}
+
+export function DeleteMeeting(arg1) {
+  return window['go']['main']['App']['DeleteMeeting'](arg1);
+}
+
+export function DeleteNote(arg1) {
+  return window['go']['main']['App']['DeleteNote'](arg1);
 }
 
 export function DeleteProject(arg1) {
@@ -26,6 +50,30 @@ export function GetDashboardSummary() {
   return window['go']['main']['App']['GetDashboardSummary']();
 }
 
+export function GetGoal(arg1) {
+  return window['go']['main']['App']['GetGoal'](arg1);
+}
+
+export function GetGoals(arg1) {
+  return window['go']['main']['App']['GetGoals'](arg1);
+}
+
+export function GetMeeting(arg1) {
+  return window['go']['main']['App']['GetMeeting'](arg1);
+}
+
+export function GetMeetings(arg1) {
+  return window['go']['main']['App']['GetMeetings'](arg1);
+}
+
+export function GetNote(arg1) {
+  return window['go']['main']['App']['GetNote'](arg1);
+}
+
+export function GetNotes(arg1) {
+  return window['go']['main']['App']['GetNotes'](arg1);
+}
+
 export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
 }
@@ -40,6 +88,22 @@ export function ToggleProjectActive(arg1) {
 
 export function UpdateActualHours(arg1) {
   return window['go']['main']['App']['UpdateActualHours'](arg1);
+}
+
+export function UpdateGoal(arg1) {
+  return window['go']['main']['App']['UpdateGoal'](arg1);
+}
+
+export function UpdateGoalStatus(arg1, arg2) {
+  return window['go']['main']['App']['UpdateGoalStatus'](arg1, arg2);
+}
+
+export function UpdateMeeting(arg1) {
+  return window['go']['main']['App']['UpdateMeeting'](arg1);
+}
+
+export function UpdateNote(arg1) {
+  return window['go']['main']['App']['UpdateNote'](arg1);
 }
 
 export function UpdateProject(arg1) {

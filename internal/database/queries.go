@@ -113,3 +113,106 @@ const (
 		SELECT COUNT(*) FROM projects WHERE is_active = 1
 	`
 )
+
+// Meeting queries
+const (
+	InsertMeeting = `
+		INSERT INTO project_meetings (project_id, title, meeting_date, duration_minutes, attendees, notes)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	SelectMeetingsByProject = `
+		SELECT id, project_id, title, meeting_date, duration_minutes, attendees, notes, created_at, updated_at
+		FROM project_meetings
+		WHERE project_id = ?
+		ORDER BY meeting_date DESC
+	`
+
+	SelectMeetingByID = `
+		SELECT id, project_id, title, meeting_date, duration_minutes, attendees, notes, created_at, updated_at
+		FROM project_meetings
+		WHERE id = ?
+	`
+
+	UpdateMeeting = `
+		UPDATE project_meetings
+		SET title = ?, meeting_date = ?, duration_minutes = ?, attendees = ?, notes = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`
+
+	DeleteMeeting = `
+		DELETE FROM project_meetings WHERE id = ?
+	`
+)
+
+// Note queries
+const (
+	InsertNote = `
+		INSERT INTO project_notes (project_id, title, content)
+		VALUES (?, ?, ?)
+	`
+
+	SelectNotesByProject = `
+		SELECT id, project_id, title, content, created_at, updated_at
+		FROM project_notes
+		WHERE project_id = ?
+		ORDER BY updated_at DESC
+	`
+
+	SelectNoteByID = `
+		SELECT id, project_id, title, content, created_at, updated_at
+		FROM project_notes
+		WHERE id = ?
+	`
+
+	UpdateNote = `
+		UPDATE project_notes
+		SET title = ?, content = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`
+
+	DeleteNote = `
+		DELETE FROM project_notes WHERE id = ?
+	`
+)
+
+// Goal queries
+const (
+	InsertGoal = `
+		INSERT INTO project_goals (project_id, title, description, status, target_date)
+		VALUES (?, ?, ?, 'pending', ?)
+	`
+
+	SelectGoalsByProject = `
+		SELECT id, project_id, title, description, status, target_date, created_at, updated_at
+		FROM project_goals
+		WHERE project_id = ?
+		ORDER BY CASE status 
+			WHEN 'in_progress' THEN 1 
+			WHEN 'pending' THEN 2 
+			WHEN 'completed' THEN 3 
+		END, created_at DESC
+	`
+
+	SelectGoalByID = `
+		SELECT id, project_id, title, description, status, target_date, created_at, updated_at
+		FROM project_goals
+		WHERE id = ?
+	`
+
+	UpdateGoal = `
+		UPDATE project_goals
+		SET title = ?, description = ?, status = ?, target_date = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`
+
+	UpdateGoalStatus = `
+		UPDATE project_goals
+		SET status = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`
+
+	DeleteGoal = `
+		DELETE FROM project_goals WHERE id = ?
+	`
+)

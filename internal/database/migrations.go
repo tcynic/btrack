@@ -11,6 +11,10 @@ func RunMigrations(db *sql.DB) error {
 		createProjectsTable,
 		createWeeklyEntriesTable,
 		createIndexes,
+		createMeetingsTable,
+		createNotesTable,
+		createGoalsTable,
+		createNewIndexes,
 	}
 
 	for _, migration := range migrations {
@@ -55,4 +59,53 @@ const createIndexes = `
 CREATE INDEX IF NOT EXISTS idx_weekly_entries_project_id ON weekly_entries(project_id);
 CREATE INDEX IF NOT EXISTS idx_weekly_entries_week_start ON weekly_entries(week_start_date);
 CREATE INDEX IF NOT EXISTS idx_projects_is_active ON projects(is_active);
+`
+
+const createMeetingsTable = `
+CREATE TABLE IF NOT EXISTS project_meetings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    meeting_date TEXT NOT NULL,
+    duration_minutes INTEGER NOT NULL DEFAULT 60,
+    attendees TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+`
+
+const createNotesTable = `
+CREATE TABLE IF NOT EXISTS project_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+`
+
+const createGoalsTable = `
+CREATE TABLE IF NOT EXISTS project_goals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    target_date TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+`
+
+const createNewIndexes = `
+CREATE INDEX IF NOT EXISTS idx_meetings_project_id ON project_meetings(project_id);
+CREATE INDEX IF NOT EXISTS idx_meetings_date ON project_meetings(meeting_date);
+CREATE INDEX IF NOT EXISTS idx_notes_project_id ON project_notes(project_id);
+CREATE INDEX IF NOT EXISTS idx_goals_project_id ON project_goals(project_id);
+CREATE INDEX IF NOT EXISTS idx_goals_status ON project_goals(status);
 `

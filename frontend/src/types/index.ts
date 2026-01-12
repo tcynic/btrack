@@ -1,3 +1,6 @@
 export * from './project'
 export * from './weekly-entry'
 export * from './dashboard'
+export * from './meeting'
+export * from './note'
+export * from './goal'

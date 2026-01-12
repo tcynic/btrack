@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Button, Card, CardHeader } from "../ui";
 import { WeeklyBreakdown } from "../weekly";
+import { MeetingList } from "../meetings";
+import { NoteList } from "../notes";
+import { GoalList } from "../goals";
 import { ProjectEditModal } from "./ProjectEditModal";
 import { useProjects } from "../../hooks";
 import { formatDate } from "../../utils";
@@ -186,6 +189,17 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
           )}
         </div>
       </Card>
+
+      {/* Goals */}
+      <div className="mb-6">
+        <GoalList projectId={currentProject.id} />
+      </div>
+
+      {/* Notes & Meetings */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <NoteList projectId={currentProject.id} />
+        <MeetingList projectId={currentProject.id} />
+      </div>
 
       {/* Weekly Breakdown */}
       <Card padding="none">

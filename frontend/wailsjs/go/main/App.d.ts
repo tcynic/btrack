@@ -5,7 +5,19 @@ import {main} from '../models';
 
 export function CalculateDistribution(arg1:models.CreateProjectInput):Promise<Array<models.WeeklyEntry>>;
 
+export function CreateGoal(arg1:models.CreateGoalInput):Promise<models.Goal>;
+
+export function CreateMeeting(arg1:models.CreateMeetingInput):Promise<models.Meeting>;
+
+export function CreateNote(arg1:models.CreateNoteInput):Promise<models.Note>;
+
 export function CreateProject(arg1:models.CreateProjectInput):Promise<models.ProjectWithStats>;
+
+export function DeleteGoal(arg1:number):Promise<void>;
+
+export function DeleteMeeting(arg1:number):Promise<void>;
+
+export function DeleteNote(arg1:number):Promise<void>;
 
 export function DeleteProject(arg1:number):Promise<void>;
 
@@ -15,6 +27,18 @@ export function GetDashboardData(arg1:number,arg2:number):Promise<Array<main.Das
 
 export function GetDashboardSummary():Promise<main.DashboardSummary>;
 
+export function GetGoal(arg1:number):Promise<models.Goal>;
+
+export function GetGoals(arg1:number):Promise<Array<models.Goal>>;
+
+export function GetMeeting(arg1:number):Promise<models.Meeting>;
+
+export function GetMeetings(arg1:number):Promise<Array<models.Meeting>>;
+
+export function GetNote(arg1:number):Promise<models.Note>;
+
+export function GetNotes(arg1:number):Promise<Array<models.Note>>;
+
 export function GetProject(arg1:number):Promise<models.ProjectWithStats>;
 
 export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWithStatus>>;
@@ -22,5 +46,13 @@ export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWi
 export function ToggleProjectActive(arg1:number):Promise<models.ProjectWithStats>;
 
 export function UpdateActualHours(arg1:models.UpdateActualHoursInput):Promise<models.WeeklyEntryWithStatus>;
+
+export function UpdateGoal(arg1:models.UpdateGoalInput):Promise<models.Goal>;
+
+export function UpdateGoalStatus(arg1:number,arg2:string):Promise<models.Goal>;
+
+export function UpdateMeeting(arg1:models.UpdateMeetingInput):Promise<models.Meeting>;
+
+export function UpdateNote(arg1:models.UpdateNoteInput):Promise<models.Note>;
 
 export function UpdateProject(arg1:models.UpdateProjectInput):Promise<models.ProjectWithStats>;

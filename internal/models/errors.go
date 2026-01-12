@@ -12,4 +12,12 @@ var (
 	ErrProjectNotFound        = errors.New("project not found")
 	ErrEntryNotFound          = errors.New("weekly entry not found")
 	ErrCannotEditFutureWeek   = errors.New("cannot edit actual hours for future weeks")
+
+	// Meeting, Note, Goal errors
+	ErrTitleRequired   = errors.New("title is required")
+	ErrDateRequired    = errors.New("date is required")
+	ErrMeetingNotFound = errors.New("meeting not found")
+	ErrNoteNotFound    = errors.New("note not found")
+	ErrGoalNotFound    = errors.New("goal not found")
+	ErrInvalidStatus   = errors.New("invalid status value")
 )
