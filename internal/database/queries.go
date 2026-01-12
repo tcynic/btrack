@@ -73,6 +73,17 @@ const (
 		DELETE FROM weekly_entries WHERE project_id = ?
 	`
 
+	DeleteFutureWeeklyEntries = `
+		DELETE FROM weekly_entries
+		WHERE project_id = ? AND week_start_date >= ?
+	`
+
+	SelectPastWeeklyHours = `
+		SELECT COALESCE(SUM(planned_hours), 0)
+		FROM weekly_entries
+		WHERE project_id = ? AND week_start_date < ?
+	`
+
 	SelectProjectStats = `
 		SELECT
 			COALESCE(SUM(planned_hours), 0) as total_planned,

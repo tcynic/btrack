@@ -206,34 +206,104 @@ func (a *App) UpdateProject(input models.UpdateProjectInput) (*models.ProjectWit
 
 	// Recalculate entries if needed
 	if needsRecalc {
-		// Delete existing entries
-		_, err = tx.Exec(database.DeleteWeeklyEntriesByProject, input.ID)
+		// Get next Monday (start of future weeks)
+		nextMonday := getCurrentWeekMonday().AddDate(0, 0, 7)
+		nextMondayStr := nextMonday.Format("2006-01-02")
+
+		// Parse the new start and end dates
+		newStartDate, err := time.Parse("2006-01-02", input.StartDate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to delete weekly entries: %w", err)
+			return nil, fmt.Errorf("invalid start date format: %w", err)
 		}
 
-		// Calculate new distribution
-		entries, err := a.CalculateDistribution(models.CreateProjectInput{
-			Name:            input.Name,
-			TotalSoldHours:  input.TotalSoldHours,
-			SpecialistHours: input.SpecialistHours,
-			StartDate:       input.StartDate,
-			EndDate:         input.EndDate,
-		})
+		newEndDate, err := time.Parse("2006-01-02", input.EndDate)
 		if err != nil {
-			return nil, fmt.Errorf("failed to calculate distribution: %w", err)
+			return nil, fmt.Errorf("invalid end date format: %w", err)
 		}
 
-		// Insert new entries
-		for _, entry := range entries {
-			_, err := tx.Exec(database.InsertWeeklyEntry,
-				input.ID,
-				entry.WeekStartDate,
-				entry.WeekNumber,
-				entry.PlannedHours,
-			)
+		// If the new start date is after next Monday, we need to delete everything and recalculate
+		if newStartDate.After(nextMonday) || newStartDate.Equal(nextMonday) {
+			// Delete all existing entries
+			_, err = tx.Exec(database.DeleteWeeklyEntriesByProject, input.ID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to insert weekly entry: %w", err)
+				return nil, fmt.Errorf("failed to delete weekly entries: %w", err)
+			}
+
+			// Calculate new distribution from scratch
+			entries, err := a.CalculateDistribution(models.CreateProjectInput{
+				Name:            input.Name,
+				TotalSoldHours:  input.TotalSoldHours,
+				SpecialistHours: input.SpecialistHours,
+				StartDate:       input.StartDate,
+				EndDate:         input.EndDate,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to calculate distribution: %w", err)
+			}
+
+			// Insert new entries
+			for _, entry := range entries {
+				_, err := tx.Exec(database.InsertWeeklyEntry,
+					input.ID,
+					entry.WeekStartDate,
+					entry.WeekNumber,
+					entry.PlannedHours,
+				)
+				if err != nil {
+					return nil, fmt.Errorf("failed to insert weekly entry: %w", err)
+				}
+			}
+		} else {
+			// Preserve past/current weeks, only recalculate future weeks
+
+			// Get sum of planned hours for past/current weeks
+			var pastWeekHours int
+			err = tx.QueryRow(database.SelectPastWeeklyHours, input.ID, nextMondayStr).Scan(&pastWeekHours)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get past week hours: %w", err)
+			}
+
+			// Delete only future week entries
+			_, err = tx.Exec(database.DeleteFutureWeeklyEntries, input.ID, nextMondayStr)
+			if err != nil {
+				return nil, fmt.Errorf("failed to delete future weekly entries: %w", err)
+			}
+
+			// Calculate remaining hours and weeks
+			myHours := input.TotalSoldHours - input.SpecialistHours
+			remainingHours := myHours - pastWeekHours
+
+			// Only create future entries if there are remaining hours and the end date is in the future
+			if remainingHours > 0 && newEndDate.After(nextMonday) {
+				// Calculate weeks between next Monday and end date
+				futureWeeks := calculateWeeksBetween(nextMonday, newEndDate)
+				if futureWeeks < 1 {
+					futureWeeks = 1
+				}
+
+				// Distribute remaining hours across future weeks (frontloaded)
+				baseHours := remainingHours / futureWeeks
+				remainder := remainingHours % futureWeeks
+
+				currentMonday := nextMonday
+				for i := 0; i < futureWeeks; i++ {
+					hours := baseHours
+					if i < remainder {
+						hours++ // Frontload extra hours
+					}
+
+					_, err := tx.Exec(database.InsertWeeklyEntry,
+						input.ID,
+						currentMonday.Format("2006-01-02"),
+						0, // Week number will be recalculated; set to 0 for now
+						hours,
+					)
+					if err != nil {
+						return nil, fmt.Errorf("failed to insert weekly entry: %w", err)
+					}
+
+					currentMonday = currentMonday.AddDate(0, 0, 7)
+				}
 			}
 		}
 	}
