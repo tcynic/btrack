@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '../ui'
+import { Button, SearchInput } from '../ui'
 import { ProjectCard } from './ProjectCard'
 import { ProjectCreateModal } from './ProjectCreateModal'
 import { useProjects } from '../../hooks'
@@ -12,23 +12,42 @@ interface ProjectListProps {
 export function ProjectList({ onProjectSelect }: ProjectListProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [showInactive, setShowInactive] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const { projects, isLoading, loadProjects, createProject } = useProjects()
 
   useEffect(() => {
     loadProjects(!showInactive)
   }, [loadProjects, showInactive])
 
-  const activeProjects = projects.filter((p) => p.isActive)
-  const inactiveProjects = projects.filter((p) => !p.isActive)
+  // Filter projects by search query
+  const filteredProjects = searchQuery
+    ? projects.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : projects
+
+  const activeProjects = filteredProjects.filter((p) => p.isActive)
+  const inactiveProjects = filteredProjects.filter((p) => !p.isActive)
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
-          <p className="text-gray-500">Manage your project hours and track progress</p>
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+            <p className="text-gray-500">Manage your project hours and track progress</p>
+          </div>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            New Project
+          </Button>
         </div>
         <div className="flex items-center space-x-3">
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search projects..."
+            className="flex-1 max-w-md"
+          />
           <label className="flex items-center text-sm text-gray-600">
             <input
               type="checkbox"
@@ -38,9 +57,6 @@ export function ProjectList({ onProjectSelect }: ProjectListProps) {
             />
             Show inactive
           </label>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            New Project
-          </Button>
         </div>
       </div>
 

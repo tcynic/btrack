@@ -1,5 +1,6 @@
 export { Button } from './Button'
 export { Input } from './Input'
+export { SearchInput } from './SearchInput'
 export { Modal } from './Modal'
 export { Card, CardHeader } from './Card'
 export { Badge, StatBadge } from './Badge'
