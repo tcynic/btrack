@@ -8,6 +8,7 @@ import { ReportsView } from "./components/reports";
 import { SettingsView } from "./components/settings";
 import { KeyboardShortcutsModal } from "./components/ui";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useTheme } from "./hooks/useTheme";
 import type { ProjectWithStats } from "./types";
 
 function AppContent() {
@@ -16,6 +17,9 @@ function AppContent() {
   );
   const [selectedProject, setSelectedProject] =
     useState<ProjectWithStats | null>(null);
+
+  // Initialize theme
+  useTheme();
 
   const { showHelp, setShowHelp } = useKeyboardShortcuts({
     onTabChange: setActiveTab,

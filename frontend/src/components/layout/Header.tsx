@@ -5,7 +5,7 @@ interface HeaderProps {
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
   return (
-    <header className="bg-white shadow">
+    <header className="bg-white dark:bg-gray-800 shadow dark:shadow-gray-700">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-3">
@@ -22,9 +22,9 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            <h1 className="text-xl font-bold text-gray-900">Bandwidth Tracker</h1>
-            <span className="text-xs text-gray-400 ml-4">
-              Press <kbd className="px-1 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-300 rounded">?</kbd> for shortcuts
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Bandwidth Tracker</h1>
+            <span className="text-xs text-gray-400 dark:text-gray-500 ml-4">
+              Press <kbd className="px-1 py-0.5 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">?</kbd> for shortcuts
             </span>
           </div>
           <nav className="flex space-x-1">
@@ -33,7 +33,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'dashboard'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Dashboard
@@ -43,7 +43,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'week'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Week
@@ -53,7 +53,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'projects'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Projects
@@ -63,7 +63,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'reports'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Reports
@@ -73,7 +73,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeTab === 'settings'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Settings
