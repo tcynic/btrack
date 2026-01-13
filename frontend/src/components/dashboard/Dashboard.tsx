@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Card, CardHeader } from "../ui";
+import { Card, CardHeader, Button } from "../ui";
 import { SummaryCards } from "./SummaryCards";
 import { WeeklyChart } from "./WeeklyChart";
 import { WeeklyTable } from "./WeeklyTable";
@@ -21,6 +21,9 @@ import type {
 } from "../../types";
 
 export function Dashboard() {
+  const [weeksBack, setWeeksBack] = useState(4)
+  const [weeksForward, setWeeksForward] = useState(12)
+  
   const {
     summary,
     weekData,
@@ -28,6 +31,7 @@ export function Dashboard() {
     isLoading,
     refreshDashboard,
     loadTodayMeetings,
+    loadDashboardData,
   } = useDashboard();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -39,6 +43,10 @@ export function Dashboard() {
   useEffect(() => {
     refreshDashboard();
   }, [refreshDashboard]);
+  
+  const handleDateRangeChange = async () => {
+    await loadDashboardData(weeksBack, weeksForward)
+  }
 
   const handleNewMeeting = () => {
     setIsCreateModalOpen(true);
@@ -94,10 +102,41 @@ export function Dashboard() {
       />
 
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Capacity Overview</h2>
-        <p className="text-gray-500">
-          Monitor your weekly bandwidth across all active projects
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Capacity Overview</h2>
+            <p className="text-gray-500">
+              Monitor your weekly bandwidth across all active projects
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <label className="text-gray-600">Weeks back:</label>
+              <input
+                type="number"
+                min="1"
+                max="52"
+                value={weeksBack}
+                onChange={(e) => setWeeksBack(Number(e.target.value))}
+                className="w-16 rounded border-gray-300 text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <label className="text-gray-600">Weeks forward:</label>
+              <input
+                type="number"
+                min="1"
+                max="52"
+                value={weeksForward}
+                onChange={(e) => setWeeksForward(Number(e.target.value))}
+                className="w-16 rounded border-gray-300 text-sm"
+              />
+            </div>
+            <Button size="sm" onClick={handleDateRangeChange}>
+              Update
+            </Button>
+          </div>
+        </div>
       </div>
 
       <SummaryCards summary={summary} />

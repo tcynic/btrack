@@ -13,18 +13,36 @@ export function ProjectList({ onProjectSelect }: ProjectListProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [showInactive, setShowInactive] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'on_track' | 'over_budget' | 'completed'>('all')
   const { projects, isLoading, loadProjects, createProject } = useProjects()
 
   useEffect(() => {
     loadProjects(!showInactive)
   }, [loadProjects, showInactive])
 
-  // Filter projects by search query
-  const filteredProjects = searchQuery
-    ? projects.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : projects
+  // Helper to determine project status
+  const getProjectStatus = (project: ProjectWithStats) => {
+    const today = new Date()
+    const endDate = new Date(project.endDate)
+    const isPastEnd = today > endDate
+    
+    if (isPastEnd) return 'completed'
+    if (project.totalActualHours > project.totalPlannedHours) return 'over_budget'
+    return 'on_track'
+  }
+
+  // Filter projects by search query and status
+  let filteredProjects = projects
+  
+  if (searchQuery) {
+    filteredProjects = filteredProjects.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }
+  
+  if (statusFilter !== 'all') {
+    filteredProjects = filteredProjects.filter((p) => getProjectStatus(p) === statusFilter)
+  }
 
   const activeProjects = filteredProjects.filter((p) => p.isActive)
   const inactiveProjects = filteredProjects.filter((p) => !p.isActive)
@@ -41,14 +59,24 @@ export function ProjectList({ onProjectSelect }: ProjectListProps) {
             New Project
           </Button>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-3">
           <SearchInput
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search projects..."
             className="flex-1 max-w-md"
           />
-          <label className="flex items-center text-sm text-gray-600">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="on_track">On Track</option>
+            <option value="over_budget">Over Budget</option>
+            <option value="completed">Completed</option>
+          </select>
+          <label className="flex items-center text-sm text-gray-600 whitespace-nowrap">
             <input
               type="checkbox"
               checked={showInactive}
