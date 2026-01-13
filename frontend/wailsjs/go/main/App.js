@@ -38,6 +38,18 @@ export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
 }
 
+export function ExportAllProjects() {
+  return window['go']['main']['App']['ExportAllProjects']();
+}
+
+export function ExportProjectSummary(arg1) {
+  return window['go']['main']['App']['ExportProjectSummary'](arg1);
+}
+
+export function ExportWeeklyReport(arg1, arg2) {
+  return window['go']['main']['App']['ExportWeeklyReport'](arg1, arg2);
+}
+
 export function GetAllProjects(arg1) {
   return window['go']['main']['App']['GetAllProjects'](arg1);
 }
@@ -92,6 +104,22 @@ export function GetWeeklyEntries(arg1) {
 
 export function GetWeeklyEntriesByWeek(arg1) {
   return window['go']['main']['App']['GetWeeklyEntriesByWeek'](arg1);
+}
+
+export function SearchGoals(arg1) {
+  return window['go']['main']['App']['SearchGoals'](arg1);
+}
+
+export function SearchMeetings(arg1) {
+  return window['go']['main']['App']['SearchMeetings'](arg1);
+}
+
+export function SearchNotes(arg1) {
+  return window['go']['main']['App']['SearchNotes'](arg1);
+}
+
+export function SearchProjects(arg1) {
+  return window['go']['main']['App']['SearchProjects'](arg1);
 }
 
 export function ToggleProjectActive(arg1) {

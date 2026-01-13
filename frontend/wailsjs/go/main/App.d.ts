@@ -21,6 +21,12 @@ export function DeleteNote(arg1:number):Promise<void>;
 
 export function DeleteProject(arg1:number):Promise<void>;
 
+export function ExportAllProjects():Promise<string>;
+
+export function ExportProjectSummary(arg1:number):Promise<string>;
+
+export function ExportWeeklyReport(arg1:string,arg2:string):Promise<string>;
+
 export function GetAllProjects(arg1:boolean):Promise<Array<models.ProjectWithStats>>;
 
 export function GetDashboardData(arg1:number,arg2:number):Promise<Array<main.DashboardWeekData>>;
@@ -48,6 +54,14 @@ export function GetProject(arg1:number):Promise<models.ProjectWithStats>;
 export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWithStatus>>;
 
 export function GetWeeklyEntriesByWeek(arg1:string):Promise<Array<models.WeeklyEntryWithProject>>;
+
+export function SearchGoals(arg1:string):Promise<Array<models.GoalWithProject>>;
+
+export function SearchMeetings(arg1:string):Promise<Array<models.MeetingWithProject>>;
+
+export function SearchNotes(arg1:string):Promise<Array<models.NoteWithProject>>;
+
+export function SearchProjects(arg1:string):Promise<Array<models.ProjectWithStats>>;
 
 export function ToggleProjectActive(arg1:number):Promise<models.ProjectWithStats>;
 
