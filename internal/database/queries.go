@@ -8,20 +8,20 @@ const (
 	`
 
 	SelectAllProjects = `
-		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, created_at, updated_at
+		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
-		ORDER BY created_at DESC
+		ORDER BY is_persistent DESC, created_at DESC
 	`
 
 	SelectActiveProjects = `
-		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, created_at, updated_at
+		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
 		WHERE is_active = 1
-		ORDER BY created_at DESC
+		ORDER BY is_persistent DESC, created_at DESC
 	`
 
 	SelectProjectByID = `
-		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, created_at, updated_at
+		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
 		WHERE id = ?
 	`
@@ -241,5 +241,52 @@ const (
 
 	DeleteGoal = `
 		DELETE FROM project_goals WHERE id = ?
+	`
+)
+
+// Search queries
+const (
+	SearchProjects = `
+		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
+		FROM projects
+		WHERE name LIKE '%' || ? || '%'
+		ORDER BY is_active DESC, created_at DESC
+		LIMIT 50
+	`
+
+	SearchMeetings = `
+		SELECT m.id, m.project_id, m.title, m.meeting_date, m.duration_minutes,
+		       m.attendees, m.notes, m.created_at, m.updated_at, p.name as project_name
+		FROM project_meetings m
+		INNER JOIN projects p ON m.project_id = p.id
+		WHERE m.title LIKE '%' || ? || '%' 
+		   OR m.notes LIKE '%' || ? || '%'
+		   OR m.attendees LIKE '%' || ? || '%'
+		ORDER BY m.meeting_date DESC
+		LIMIT 50
+	`
+
+	SearchNotes = `
+		SELECT n.id, n.project_id, n.title, n.content, n.created_at, n.updated_at, p.name as project_name
+		FROM project_notes n
+		INNER JOIN projects p ON n.project_id = p.id
+		WHERE n.title LIKE '%' || ? || '%'
+		   OR n.content LIKE '%' || ? || '%'
+		ORDER BY n.updated_at DESC
+		LIMIT 50
+	`
+
+	SearchGoals = `
+		SELECT g.id, g.project_id, g.title, g.description, g.status, g.target_date, g.created_at, g.updated_at, p.name as project_name
+		FROM project_goals g
+		INNER JOIN projects p ON g.project_id = p.id
+		WHERE g.title LIKE '%' || ? || '%'
+		   OR g.description LIKE '%' || ? || '%'
+		ORDER BY CASE g.status
+			WHEN 'in_progress' THEN 1
+			WHEN 'pending' THEN 2
+			WHEN 'completed' THEN 3
+		END, g.created_at DESC
+		LIMIT 50
 	`
 )

@@ -82,7 +82,7 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 	var projects []models.ProjectWithStats
 	for rows.Next() {
 		var p models.Project
-		var isActive int
+		var isActive, isPersistent int
 		var createdAt, updatedAt string
 
 		err := rows.Scan(
@@ -93,6 +93,7 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 			&p.StartDate,
 			&p.EndDate,
 			&isActive,
+			&isPersistent,
 			&createdAt,
 			&updatedAt,
 		)
@@ -101,6 +102,7 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 		}
 
 		p.IsActive = isActive == 1
+		p.IsPersistent = isPersistent == 1
 		p.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
 		p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
@@ -129,7 +131,7 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 // GetProject returns a single project by ID with stats
 func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
 	var p models.Project
-	var isActive int
+	var isActive, isPersistent int
 	var createdAt, updatedAt string
 
 	err := a.db.QueryRow(database.SelectProjectByID, id).Scan(
@@ -140,6 +142,7 @@ func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
 		&p.StartDate,
 		&p.EndDate,
 		&isActive,
+		&isPersistent,
 		&createdAt,
 		&updatedAt,
 	)
@@ -148,6 +151,7 @@ func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
 	}
 
 	p.IsActive = isActive == 1
+	p.IsPersistent = isPersistent == 1
 	p.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
 	p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
@@ -173,11 +177,11 @@ func (a *App) UpdateProject(input models.UpdateProjectInput) (*models.ProjectWit
 		return nil, err
 	}
 
-	// Check if we need to recalculate entries
-	needsRecalc := existing.TotalSoldHours != input.TotalSoldHours ||
+	// Check if we need to recalculate entries (skip for persistent projects)
+	needsRecalc := !existing.IsPersistent && (existing.TotalSoldHours != input.TotalSoldHours ||
 		existing.SpecialistHours != input.SpecialistHours ||
 		existing.StartDate != input.StartDate ||
-		existing.EndDate != input.EndDate
+		existing.EndDate != input.EndDate)
 
 	tx, err := a.db.Begin()
 	if err != nil {
@@ -317,6 +321,16 @@ func (a *App) UpdateProject(input models.UpdateProjectInput) (*models.ProjectWit
 
 // DeleteProject removes a project and its weekly entries
 func (a *App) DeleteProject(id int64) error {
+	// Check if project is persistent
+	project, err := a.GetProject(id)
+	if err != nil {
+		return err
+	}
+
+	if project.IsPersistent {
+		return fmt.Errorf("cannot delete persistent project")
+	}
+
 	result, err := a.db.Exec(database.DeleteProject, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete project: %w", err)
@@ -357,6 +371,62 @@ type projectStats struct {
 	TotalPlanned int
 	TotalActual  int
 	TotalWeeks   int
+}
+
+// SearchProjects searches for projects by name
+func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
+	rows, err := a.db.Query(database.SearchProjects, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search projects: %w", err)
+	}
+	defer rows.Close()
+
+	var projects []models.ProjectWithStats
+	for rows.Next() {
+		var p models.Project
+		var isActive, isPersistent int
+		var createdAt, updatedAt string
+
+		err := rows.Scan(
+			&p.ID,
+			&p.Name,
+			&p.TotalSoldHours,
+			&p.SpecialistHours,
+			&p.StartDate,
+			&p.EndDate,
+			&isActive,
+			&isPersistent,
+			&createdAt,
+			&updatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan project: %w", err)
+		}
+
+		p.IsActive = isActive == 1
+		p.IsPersistent = isPersistent == 1
+		p.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+
+		stats, err := a.getProjectStats(p.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get project stats: %w", err)
+		}
+
+		projects = append(projects, models.ProjectWithStats{
+			Project:           p,
+			MyHours:           p.TotalSoldHours - p.SpecialistHours,
+			TotalWeeks:        stats.TotalWeeks,
+			TotalPlannedHours: stats.TotalPlanned,
+			TotalActualHours:  stats.TotalActual,
+		})
+	}
+
+	if projects == nil {
+		projects = []models.ProjectWithStats{}
+	}
+
+	return projects, nil
 }
 
 // getProjectStats retrieves aggregated stats for a project

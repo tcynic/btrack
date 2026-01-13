@@ -268,3 +268,52 @@ func (a *App) GetMeetingsByWeek(weekStartDate string) ([]models.MeetingWithProje
 
 	return meetings, nil
 }
+
+// SearchMeetings searches for meetings by title, notes, or attendees
+func (a *App) SearchMeetings(query string) ([]models.MeetingWithProject, error) {
+	rows, err := a.db.Query(database.SearchMeetings, query, query, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search meetings: %w", err)
+	}
+	defer rows.Close()
+
+	var meetings []models.MeetingWithProject
+	for rows.Next() {
+		var m models.MeetingWithProject
+		var attendees, notes *string
+		var createdAt, updatedAt string
+
+		err := rows.Scan(
+			&m.ID,
+			&m.ProjectID,
+			&m.Title,
+			&m.MeetingDate,
+			&m.DurationMinutes,
+			&attendees,
+			&notes,
+			&m.CreatedAt,
+			&m.UpdatedAt,
+			&m.ProjectName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan meeting: %w", err)
+		}
+
+		if attendees != nil {
+			m.Attendees = *attendees
+		}
+		if notes != nil {
+			m.Notes = *notes
+		}
+		m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		m.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+
+		meetings = append(meetings, m)
+	}
+
+	if meetings == nil {
+		meetings = []models.MeetingWithProject{}
+	}
+
+	return meetings, nil
+}

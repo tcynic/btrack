@@ -162,7 +162,7 @@ export function WeekView() {
           ) : (
             <WeekHoursTable
               entries={entries}
-              onUpdateActualHours={async (entryId, actualHours) => {
+              onUpdateActualHours={async (entryId: number, actualHours: number) => {
                 await updateActualHours({ entryId, actualHours })
               }}
               isCurrentWeek={isCurrent}

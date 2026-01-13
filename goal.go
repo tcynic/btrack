@@ -186,3 +186,51 @@ func (a *App) DeleteGoal(id int64) error {
 
 	return nil
 }
+
+// SearchGoals searches for goals by title or description
+func (a *App) SearchGoals(query string) ([]models.GoalWithProject, error) {
+	rows, err := a.db.Query(database.SearchGoals, query, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search goals: %w", err)
+	}
+	defer rows.Close()
+
+	var goals []models.GoalWithProject
+	for rows.Next() {
+		var g models.GoalWithProject
+		var description, targetDate *string
+		var createdAt, updatedAt string
+
+		err := rows.Scan(
+			&g.ID,
+			&g.ProjectID,
+			&g.Title,
+			&description,
+			&g.Status,
+			&targetDate,
+			&createdAt,
+			&updatedAt,
+			&g.ProjectName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan goal: %w", err)
+		}
+
+		if description != nil {
+			g.Description = *description
+		}
+		if targetDate != nil {
+			g.TargetDate = *targetDate
+		}
+		g.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		g.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+
+		goals = append(goals, g)
+	}
+
+	if goals == nil {
+		goals = []models.GoalWithProject{}
+	}
+
+	return goals, nil
+}

@@ -145,3 +145,46 @@ func (a *App) DeleteNote(id int64) error {
 
 	return nil
 }
+
+// SearchNotes searches for notes by title or content
+func (a *App) SearchNotes(query string) ([]models.NoteWithProject, error) {
+	rows, err := a.db.Query(database.SearchNotes, query, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search notes: %w", err)
+	}
+	defer rows.Close()
+
+	var notes []models.NoteWithProject
+	for rows.Next() {
+		var n models.NoteWithProject
+		var content *string
+		var createdAt, updatedAt string
+
+		err := rows.Scan(
+			&n.ID,
+			&n.ProjectID,
+			&n.Title,
+			&content,
+			&createdAt,
+			&updatedAt,
+			&n.ProjectName,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan note: %w", err)
+		}
+
+		if content != nil {
+			n.Content = *content
+		}
+		n.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		n.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+
+		notes = append(notes, n)
+	}
+
+	if notes == nil {
+		notes = []models.NoteWithProject{}
+	}
+
+	return notes, nil
+}
