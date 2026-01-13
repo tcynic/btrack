@@ -36,7 +36,7 @@ export function DashboardMeetingModal({
     setIsLoadingProjects(true)
     try {
       const data = await GetAllProjects(true) // Only active projects
-      setProjects(data || [])
+      setProjects((data || []) as ProjectWithStats[])
       if (data && data.length > 0) {
         setProjectId(data[0].id)
       }

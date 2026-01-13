@@ -15,6 +15,7 @@ func RunMigrations(db *sql.DB) error {
 		createNotesTable,
 		createGoalsTable,
 		createNewIndexes,
+		addPersistentProjectColumn,
 	}
 
 	for _, migration := range migrations {
@@ -109,3 +110,42 @@ CREATE INDEX IF NOT EXISTS idx_notes_project_id ON project_notes(project_id);
 CREATE INDEX IF NOT EXISTS idx_goals_project_id ON project_goals(project_id);
 CREATE INDEX IF NOT EXISTS idx_goals_status ON project_goals(status);
 `
+
+const addPersistentProjectColumn = `
+ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0;
+`
+
+// SeedPersistentProjects creates the two persistent work projects if they don't exist
+func SeedPersistentProjects(db *sql.DB) error {
+	persistentProjects := []struct {
+		Name string
+	}{
+		{Name: "Management"},
+		{Name: "Internal Projects"},
+	}
+
+	for _, proj := range persistentProjects {
+		// Check if project already exists
+		var count int
+		err := db.QueryRow("SELECT COUNT(*) FROM projects WHERE name = ? AND is_persistent = 1", proj.Name).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("failed to check for existing persistent project: %w", err)
+		}
+
+		// Skip if already exists
+		if count > 0 {
+			continue
+		}
+
+		// Insert persistent project with special values
+		_, err = db.Exec(`
+			INSERT INTO projects (name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent)
+			VALUES (?, 0, 0, '1900-01-01', '2099-12-31', 1, 1)
+		`, proj.Name)
+		if err != nil {
+			return fmt.Errorf("failed to insert persistent project %s: %w", proj.Name, err)
+		}
+	}
+
+	return nil
+}

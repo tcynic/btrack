@@ -34,6 +34,11 @@ func Initialize() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
+	// Seed persistent projects
+	if err := SeedPersistentProjects(db); err != nil {
+		return nil, fmt.Errorf("failed to seed persistent projects: %w", err)
+	}
+
 	DB = db
 	return db, nil
 }

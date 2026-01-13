@@ -2,6 +2,7 @@ export namespace main {
 	
 	export class DashboardSummary {
 	    totalActiveProjects: number;
+	    atRiskProjects: number;
 	    totalPlannedThisWeek: number;
 	    totalActualThisWeek: number;
 	    totalPlannedNextWeek: number;
@@ -13,6 +14,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.totalActiveProjects = source["totalActiveProjects"];
+	        this.atRiskProjects = source["atRiskProjects"];
 	        this.totalPlannedThisWeek = source["totalPlannedThisWeek"];
 	        this.totalActualThisWeek = source["totalActualThisWeek"];
 	        this.totalPlannedNextWeek = source["totalPlannedNextWeek"];
@@ -395,6 +397,22 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class ProjectHealth {
+	    status: string;
+	    message: string;
+	    severity: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectHealth(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.status = source["status"];
+	        this.message = source["message"];
+	        this.severity = source["severity"];
+	    }
+	}
 	export class ProjectWithStats {
 	    id: number;
 	    name: string;
@@ -412,6 +430,7 @@ export namespace models {
 	    totalWeeks: number;
 	    totalPlannedHours: number;
 	    totalActualHours: number;
+	    health: ProjectHealth;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProjectWithStats(source);
@@ -433,6 +452,7 @@ export namespace models {
 	        this.totalWeeks = source["totalWeeks"];
 	        this.totalPlannedHours = source["totalPlannedHours"];
 	        this.totalActualHours = source["totalActualHours"];
+	        this.health = this.convertValues(source["health"], ProjectHealth);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

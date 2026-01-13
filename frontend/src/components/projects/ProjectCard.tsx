@@ -13,17 +13,41 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
     ? Math.min(100, (project.totalActualHours / project.totalPlannedHours) * 100)
     : 0
 
+  const healthConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+    on_track: { label: 'On Track', color: 'text-green-700', bg: 'bg-green-100', dot: 'bg-green-500' },
+    at_risk: { label: 'At Risk', color: 'text-yellow-700', bg: 'bg-yellow-100', dot: 'bg-yellow-500' },
+    over_budget: { label: 'Over Budget', color: 'text-red-700', bg: 'bg-red-100', dot: 'bg-red-500' },
+    completed: { label: 'Completed', color: 'text-blue-700', bg: 'bg-blue-100', dot: 'bg-blue-500' },
+  }
+
+  const health = healthConfig[project.health?.status as string || 'on_track']
+
   return (
     <Card
       className="cursor-pointer hover:shadow-md transition-shadow"
       onClick={onClick}
     >
       <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
-          <p className="text-sm text-gray-500">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-lg font-semibold text-gray-900">
+              {project.name}
+            </h3>
+            {project.isPersistent && (
+              <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">
+                Persistent
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mb-1">
             {formatDate(project.startDate)} - {formatDate(project.endDate)}
           </p>
+          <div className="flex items-center gap-1.5" title={project.health?.message}>
+            <span className={`w-2 h-2 rounded-full ${health.dot}`}></span>
+            <span className={`text-xs font-medium ${health.color}`}>
+              {health.label}
+            </span>
+          </div>
         </div>
         {!project.isActive && (
           <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">

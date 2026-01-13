@@ -7,6 +7,7 @@ export interface DashboardWeekData {
 
 export interface DashboardSummary {
   totalActiveProjects: number
+  atRiskProjects: number
   totalPlannedThisWeek: number
   totalActualThisWeek: number
   totalPlannedNextWeek: number

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"btrack/internal/database"
+	"btrack/internal/models"
 )
 
 // DashboardWeekData represents aggregated data for a single week across all projects
@@ -18,6 +19,7 @@ type DashboardWeekData struct {
 // DashboardSummary provides high-level statistics
 type DashboardSummary struct {
 	TotalActiveProjects  int `json:"totalActiveProjects"`
+	AtRiskProjects       int `json:"atRiskProjects"`
 	TotalPlannedThisWeek int `json:"totalPlannedThisWeek"`
 	TotalActualThisWeek  int `json:"totalActualThisWeek"`
 	TotalPlannedNextWeek int `json:"totalPlannedNextWeek"`
@@ -70,6 +72,16 @@ func (a *App) GetDashboardSummary() (*DashboardSummary, error) {
 	err := a.db.QueryRow(database.SelectActiveProjectCount).Scan(&summary.TotalActiveProjects)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get active project count: %w", err)
+	}
+
+	// Get at-risk projects count
+	projects, err := a.GetAllProjects(true)
+	if err == nil {
+		for _, p := range projects {
+			if p.Health.Status == models.HealthAtRisk || p.Health.Status == models.HealthOverBudget {
+				summary.AtRiskProjects++
+			}
+		}
 	}
 
 	currentMonday := getCurrentWeekMonday()

@@ -103,6 +103,11 @@ func (a *App) UpdateActualHours(input models.UpdateActualHoursInput) (*models.We
 
 // GetWeeklyEntriesByWeek returns all weekly entries for a specific week across all active projects
 func (a *App) GetWeeklyEntriesByWeek(weekStartDate string) ([]models.WeeklyEntryWithProject, error) {
+	// First, ensure all persistent projects have entries for this week
+	if err := a.ensurePersistentEntries(weekStartDate); err != nil {
+		return nil, fmt.Errorf("failed to ensure persistent entries: %w", err)
+	}
+
 	rows, err := a.db.Query(database.SelectWeeklyEntriesByWeek, weekStartDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query weekly entries by week: %w", err)
@@ -158,6 +163,38 @@ func (a *App) GetWeeklyEntriesByWeek(weekStartDate string) ([]models.WeeklyEntry
 	}
 
 	return entries, nil
+}
+
+// ensurePersistentEntries creates weekly entries for all persistent projects if they don't exist
+func (a *App) ensurePersistentEntries(weekStartDate string) error {
+	// Get all active persistent projects
+	rows, err := a.db.Query("SELECT id FROM projects WHERE is_persistent = 1 AND is_active = 1")
+	if err != nil {
+		return fmt.Errorf("failed to query persistent projects: %w", err)
+	}
+	defer rows.Close()
+
+	var projectIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return fmt.Errorf("failed to scan project ID: %w", err)
+		}
+		projectIDs = append(projectIDs, id)
+	}
+
+	// For each persistent project, insert entry if it doesn't exist
+	for _, projectID := range projectIDs {
+		_, err := a.db.Exec(`
+			INSERT OR IGNORE INTO weekly_entries (project_id, week_start_date, week_number, planned_hours, actual_hours)
+			VALUES (?, ?, 0, 0, 0)
+		`, projectID, weekStartDate)
+		if err != nil {
+			return fmt.Errorf("failed to insert persistent entry: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // getWeeklyEntry retrieves a single weekly entry by ID
