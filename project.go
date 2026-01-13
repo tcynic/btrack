@@ -437,6 +437,15 @@ func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
 
 // calculateProjectHealth determines the health status of a project
 func calculateProjectHealth(p models.ProjectWithStats) models.ProjectHealth {
+	// Persistent projects are always on track
+	if p.IsPersistent {
+		return models.ProjectHealth{
+			Status:   models.HealthOnTrack,
+			Message:  "Ongoing work",
+			Severity: "info",
+		}
+	}
+
 	// Parse end date
 	endDate, err := time.Parse("2006-01-02", p.EndDate)
 	if err != nil {
