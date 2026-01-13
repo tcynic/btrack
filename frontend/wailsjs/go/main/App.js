@@ -6,6 +6,10 @@ export function CalculateDistribution(arg1) {
   return window['go']['main']['App']['CalculateDistribution'](arg1);
 }
 
+export function CreateBackup() {
+  return window['go']['main']['App']['CreateBackup']();
+}
+
 export function CreateGoal(arg1) {
   return window['go']['main']['App']['CreateGoal'](arg1);
 }
@@ -52,6 +56,10 @@ export function ExportWeeklyReport(arg1, arg2) {
 
 export function GetAllProjects(arg1) {
   return window['go']['main']['App']['GetAllProjects'](arg1);
+}
+
+export function GetBackupInfo() {
+  return window['go']['main']['App']['GetBackupInfo']();
 }
 
 export function GetCapacityUtilization(arg1, arg2) {
@@ -120,6 +128,10 @@ export function GetWeeklyEntries(arg1) {
 
 export function GetWeeklyEntriesByWeek(arg1) {
   return window['go']['main']['App']['GetWeeklyEntriesByWeek'](arg1);
+}
+
+export function RestoreBackup() {
+  return window['go']['main']['App']['RestoreBackup']();
 }
 
 export function SearchGoals(arg1) {

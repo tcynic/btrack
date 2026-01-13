@@ -1,5 +1,21 @@
 export namespace main {
 	
+	export class BackupInfo {
+	    databasePath: string;
+	    databaseSize: number;
+	    lastModified: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.databasePath = source["databasePath"];
+	        this.databaseSize = source["databaseSize"];
+	        this.lastModified = source["lastModified"];
+	    }
+	}
 	export class CapacityWeek {
 	    weekStart: string;
 	    plannedHours: number;

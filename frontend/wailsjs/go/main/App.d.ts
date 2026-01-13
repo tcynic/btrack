@@ -5,6 +5,8 @@ import {main} from '../models';
 
 export function CalculateDistribution(arg1:models.CreateProjectInput):Promise<Array<models.WeeklyEntry>>;
 
+export function CreateBackup():Promise<string>;
+
 export function CreateGoal(arg1:models.CreateGoalInput):Promise<models.Goal>;
 
 export function CreateMeeting(arg1:models.CreateMeetingInput):Promise<models.Meeting>;
@@ -28,6 +30,8 @@ export function ExportProjectSummary(arg1:number):Promise<string>;
 export function ExportWeeklyReport(arg1:string,arg2:string):Promise<string>;
 
 export function GetAllProjects(arg1:boolean):Promise<Array<models.ProjectWithStats>>;
+
+export function GetBackupInfo():Promise<main.BackupInfo>;
 
 export function GetCapacityUtilization(arg1:string,arg2:string):Promise<Array<main.CapacityWeek>>;
 
@@ -62,6 +66,8 @@ export function GetVarianceReport(arg1:string,arg2:string):Promise<Array<main.Va
 export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWithStatus>>;
 
 export function GetWeeklyEntriesByWeek(arg1:string):Promise<Array<models.WeeklyEntryWithProject>>;
+
+export function RestoreBackup():Promise<void>;
 
 export function SearchGoals(arg1:string):Promise<Array<models.GoalWithProject>>;
 
