@@ -15,13 +15,17 @@ func RunMigrations(db *sql.DB) error {
 		createNotesTable,
 		createGoalsTable,
 		createNewIndexes,
-		addPersistentProjectColumn,
 	}
 
 	for _, migration := range migrations {
 		if _, err := db.Exec(migration); err != nil {
 			return fmt.Errorf("migration failed: %w", err)
 		}
+	}
+
+	// Handle is_persistent column migration separately (idempotent)
+	if err := addPersistentColumnIfNotExists(db); err != nil {
+		return fmt.Errorf("failed to add is_persistent column: %w", err)
 	}
 
 	return nil
@@ -111,9 +115,28 @@ CREATE INDEX IF NOT EXISTS idx_goals_project_id ON project_goals(project_id);
 CREATE INDEX IF NOT EXISTS idx_goals_status ON project_goals(status);
 `
 
-const addPersistentProjectColumn = `
-ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0;
-`
+// addPersistentColumnIfNotExists adds is_persistent column only if it doesn't exist
+func addPersistentColumnIfNotExists(db *sql.DB) error {
+	// Check if column exists by querying table info
+	var count int
+	err := db.QueryRow(`
+		SELECT COUNT(*) 
+		FROM pragma_table_info('projects') 
+		WHERE name = 'is_persistent'
+	`).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// Column already exists, skip
+	if count > 0 {
+		return nil
+	}
+
+	// Add the column
+	_, err = db.Exec(`ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0`)
+	return err
+}
 
 // SeedPersistentProjects creates the two persistent work projects if they don't exist
 func SeedPersistentProjects(db *sql.DB) error {
