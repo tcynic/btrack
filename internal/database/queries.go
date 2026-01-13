@@ -121,6 +121,15 @@ const (
 	SelectActiveProjectCount = `
 		SELECT COUNT(*) FROM projects WHERE is_active = 1
 	`
+
+	SelectAllGoalStats = `
+		SELECT
+			COUNT(*) as total_goals,
+			SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_goals
+		FROM project_goals g
+		INNER JOIN projects p ON g.project_id = p.id
+		WHERE p.is_active = 1
+	`
 )
 
 // Meeting queries
@@ -241,6 +250,13 @@ const (
 
 	DeleteGoal = `
 		DELETE FROM project_goals WHERE id = ?
+	`
+
+	SelectGoalStatsByProject = `
+		SELECT status, COUNT(*) as count
+		FROM project_goals
+		WHERE project_id = ?
+		GROUP BY status
 	`
 )
 

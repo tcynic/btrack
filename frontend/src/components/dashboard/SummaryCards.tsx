@@ -8,8 +8,8 @@ interface SummaryCardsProps {
 export function SummaryCards({ summary }: SummaryCardsProps) {
   if (!summary) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {[1, 2, 3, 4].map((i) => (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {[1, 2, 3, 4, 5].map((i) => (
           <Card key={i} className="animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
             <div className="h-8 bg-gray-200 rounded w-16"></div>
@@ -78,10 +78,21 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
         </svg>
       ),
     },
+    {
+      label: 'Goals Progress',
+      value: summary.totalGoals > 0 ? `${summary.completedGoals}/${summary.totalGoals}` : '0',
+      color: 'text-teal-600',
+      bgColor: 'bg-teal-50',
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
       {cards.map((card) => (
         <Card key={card.label}>
           <div className="flex items-center">
@@ -91,7 +102,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
             <div>
               <p className="text-sm text-gray-500">{card.label}</p>
               <p className={`text-2xl font-bold ${card.color}`}>
-                {card.value}
+                {typeof card.value === 'number' ? card.value : card.value}
                 {card.suffix && <span className="text-sm font-normal ml-1">{card.suffix}</span>}
               </p>
             </div>

@@ -37,6 +37,8 @@ export function GetDashboardSummary():Promise<main.DashboardSummary>;
 
 export function GetGoal(arg1:number):Promise<models.Goal>;
 
+export function GetGoalStats(arg1:number):Promise<main.GoalStats>;
+
 export function GetGoals(arg1:number):Promise<Array<models.Goal>>;
 
 export function GetMeeting(arg1:number):Promise<models.Meeting>;

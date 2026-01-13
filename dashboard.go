@@ -23,6 +23,8 @@ type DashboardSummary struct {
 	TotalPlannedThisWeek int `json:"totalPlannedThisWeek"`
 	TotalActualThisWeek  int `json:"totalActualThisWeek"`
 	TotalPlannedNextWeek int `json:"totalPlannedNextWeek"`
+	TotalGoals           int `json:"totalGoals"`
+	CompletedGoals       int `json:"completedGoals"`
 }
 
 // GetDashboardData returns aggregated weekly data for the dashboard
@@ -99,6 +101,13 @@ func (a *App) GetDashboardSummary() (*DashboardSummary, error) {
 	if err == nil && nextWeekData != nil {
 		summary.TotalPlannedNextWeek = nextWeekData.TotalPlannedHours
 	}
+
+	// Get goal metrics across all active projects
+	err = a.db.QueryRow(database.SelectAllGoalStats).Scan(
+		&summary.TotalGoals,
+		&summary.CompletedGoals,
+	)
+	// Ignore errors for goal stats, just keep as 0
 
 	return summary, nil
 }

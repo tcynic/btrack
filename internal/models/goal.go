@@ -7,6 +7,7 @@ const (
 	GoalStatusPending    = "pending"
 	GoalStatusInProgress = "in_progress"
 	GoalStatusCompleted  = "completed"
+	GoalStatusCancelled  = "cancelled"
 )
 
 // Goal represents a project goal
@@ -51,7 +52,7 @@ func (u *UpdateGoalInput) Validate() error {
 	if u.Title == "" {
 		return ErrTitleRequired
 	}
-	if u.Status != "" && u.Status != GoalStatusPending && u.Status != GoalStatusInProgress && u.Status != GoalStatusCompleted {
+	if u.Status != "" && u.Status != GoalStatusPending && u.Status != GoalStatusInProgress && u.Status != GoalStatusCompleted && u.Status != GoalStatusCancelled {
 		return ErrInvalidStatus
 	}
 	return nil
@@ -59,5 +60,5 @@ func (u *UpdateGoalInput) Validate() error {
 
 // IsValidStatus checks if a status string is valid
 func IsValidStatus(status string) bool {
-	return status == GoalStatusPending || status == GoalStatusInProgress || status == GoalStatusCompleted
+	return status == GoalStatusPending || status == GoalStatusInProgress || status == GoalStatusCompleted || status == GoalStatusCancelled
 }

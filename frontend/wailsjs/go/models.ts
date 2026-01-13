@@ -26,6 +26,8 @@ export namespace main {
 	    totalPlannedThisWeek: number;
 	    totalActualThisWeek: number;
 	    totalPlannedNextWeek: number;
+	    totalGoals: number;
+	    completedGoals: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new DashboardSummary(source);
@@ -38,6 +40,8 @@ export namespace main {
 	        this.totalPlannedThisWeek = source["totalPlannedThisWeek"];
 	        this.totalActualThisWeek = source["totalActualThisWeek"];
 	        this.totalPlannedNextWeek = source["totalPlannedNextWeek"];
+	        this.totalGoals = source["totalGoals"];
+	        this.completedGoals = source["completedGoals"];
 	    }
 	}
 	export class DashboardWeekData {
@@ -56,6 +60,28 @@ export namespace main {
 	        this.totalPlannedHours = source["totalPlannedHours"];
 	        this.totalActualHours = source["totalActualHours"];
 	        this.projectCount = source["projectCount"];
+	    }
+	}
+	export class GoalStats {
+	    total: number;
+	    pending: number;
+	    inProgress: number;
+	    completed: number;
+	    cancelled: number;
+	    completionRate: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoalStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total = source["total"];
+	        this.pending = source["pending"];
+	        this.inProgress = source["inProgress"];
+	        this.completed = source["completed"];
+	        this.cancelled = source["cancelled"];
+	        this.completionRate = source["completionRate"];
 	    }
 	}
 	export class MonthlyTrend {

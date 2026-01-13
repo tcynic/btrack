@@ -70,6 +70,10 @@ export function GetGoal(arg1) {
   return window['go']['main']['App']['GetGoal'](arg1);
 }
 
+export function GetGoalStats(arg1) {
+  return window['go']['main']['App']['GetGoalStats'](arg1);
+}
+
 export function GetGoals(arg1) {
   return window['go']['main']['App']['GetGoals'](arg1);
 }

@@ -11,4 +11,6 @@ export interface DashboardSummary {
   totalPlannedThisWeek: number
   totalActualThisWeek: number
   totalPlannedNextWeek: number
+  totalGoals: number
+  completedGoals: number
 }
