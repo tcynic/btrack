@@ -22,6 +22,12 @@ type WeeklyEntryWithStatus struct {
 	IsPastWeek bool   `json:"isPastWeek"`
 }
 
+// WeeklyEntryWithProject includes project name for cross-project queries
+type WeeklyEntryWithProject struct {
+	WeeklyEntryWithStatus
+	ProjectName string `json:"projectName"`
+}
+
 // UpdateActualHoursInput is the input for updating actual hours
 type UpdateActualHoursInput struct {
 	EntryID     int64 `json:"entryId"`

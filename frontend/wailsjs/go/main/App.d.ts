@@ -35,6 +35,10 @@ export function GetMeeting(arg1:number):Promise<models.Meeting>;
 
 export function GetMeetings(arg1:number):Promise<Array<models.Meeting>>;
 
+export function GetMeetingsByDate(arg1:string):Promise<Array<models.MeetingWithProject>>;
+
+export function GetMeetingsByWeek(arg1:string):Promise<Array<models.MeetingWithProject>>;
+
 export function GetNote(arg1:number):Promise<models.Note>;
 
 export function GetNotes(arg1:number):Promise<Array<models.Note>>;
@@ -42,6 +46,8 @@ export function GetNotes(arg1:number):Promise<Array<models.Note>>;
 export function GetProject(arg1:number):Promise<models.ProjectWithStats>;
 
 export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWithStatus>>;
+
+export function GetWeeklyEntriesByWeek(arg1:string):Promise<Array<models.WeeklyEntryWithProject>>;
 
 export function ToggleProjectActive(arg1:number):Promise<models.ProjectWithStats>;
 

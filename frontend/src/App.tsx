@@ -2,11 +2,12 @@ import { useState } from "react";
 import { AppProvider } from "./context/AppContext";
 import { Layout } from "./components/layout";
 import { Dashboard } from "./components/dashboard";
+import { WeekView } from "./components/week";
 import { ProjectList, ProjectDetail } from "./components/projects";
 import type { ProjectWithStats } from "./types";
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "projects">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "week" | "projects">(
     "dashboard",
   );
   const [selectedProject, setSelectedProject] =
@@ -24,6 +25,8 @@ function AppContent() {
     <Layout activeTab={activeTab} onTabChange={setActiveTab}>
       {activeTab === "dashboard" ? (
         <Dashboard />
+      ) : activeTab === "week" ? (
+        <WeekView />
       ) : selectedProject ? (
         <ProjectDetail project={selectedProject} onBack={handleBackToList} />
       ) : (

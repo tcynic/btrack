@@ -15,6 +15,12 @@ type Meeting struct {
 	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
+// MeetingWithProject extends Meeting with project name for cross-project queries
+type MeetingWithProject struct {
+	Meeting
+	ProjectName string `json:"projectName"`
+}
+
 // CreateMeetingInput is the input for creating a new meeting
 type CreateMeetingInput struct {
 	ProjectID       int64  `json:"projectId"`

@@ -66,6 +66,14 @@ export function GetMeetings(arg1) {
   return window['go']['main']['App']['GetMeetings'](arg1);
 }
 
+export function GetMeetingsByDate(arg1) {
+  return window['go']['main']['App']['GetMeetingsByDate'](arg1);
+}
+
+export function GetMeetingsByWeek(arg1) {
+  return window['go']['main']['App']['GetMeetingsByWeek'](arg1);
+}
+
 export function GetNote(arg1) {
   return window['go']['main']['App']['GetNote'](arg1);
 }
@@ -80,6 +88,10 @@ export function GetProject(arg1) {
 
 export function GetWeeklyEntries(arg1) {
   return window['go']['main']['App']['GetWeeklyEntries'](arg1);
+}
+
+export function GetWeeklyEntriesByWeek(arg1) {
+  return window['go']['main']['App']['GetWeeklyEntriesByWeek'](arg1);
 }
 
 export function ToggleProjectActive(arg1) {

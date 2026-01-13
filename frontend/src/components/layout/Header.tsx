@@ -1,6 +1,6 @@
 interface HeaderProps {
-  activeTab: 'dashboard' | 'projects'
-  onTabChange: (tab: 'dashboard' | 'projects') => void
+  activeTab: 'dashboard' | 'week' | 'projects'
+  onTabChange: (tab: 'dashboard' | 'week' | 'projects') => void
 }
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
@@ -34,6 +34,16 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               }`}
             >
               Dashboard
+            </button>
+            <button
+              onClick={() => onTabChange('week')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'week'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Week
             </button>
             <button
               onClick={() => onTabChange('projects')}

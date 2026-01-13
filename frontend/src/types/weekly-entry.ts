@@ -15,6 +15,10 @@ export interface WeeklyEntryWithStatus extends WeeklyEntry {
   isPastWeek: boolean
 }
 
+export interface WeeklyEntryWithProject extends WeeklyEntryWithStatus {
+  projectName: string
+}
+
 export interface UpdateActualHoursInput {
   entryId: number
   actualHours: number

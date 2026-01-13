@@ -63,6 +63,15 @@ const (
 		ORDER BY we.week_start_date ASC
 	`
 
+	SelectWeeklyEntriesByWeek = `
+		SELECT we.id, we.project_id, we.week_start_date, we.week_number, we.planned_hours, we.actual_hours,
+		       we.created_at, we.updated_at, p.name as project_name
+		FROM weekly_entries we
+		INNER JOIN projects p ON we.project_id = p.id
+		WHERE p.is_active = 1 AND we.week_start_date = ?
+		ORDER BY p.name ASC
+	`
+
 	UpdateActualHours = `
 		UPDATE weekly_entries
 		SET actual_hours = ?, updated_at = datetime('now')
@@ -143,6 +152,24 @@ const (
 	DeleteMeeting = `
 		DELETE FROM project_meetings WHERE id = ?
 	`
+
+	SelectMeetingsByDate = `
+		SELECT m.id, m.project_id, m.title, m.meeting_date, m.duration_minutes,
+		       m.attendees, m.notes, m.created_at, m.updated_at, p.name as project_name
+		FROM project_meetings m
+		INNER JOIN projects p ON m.project_id = p.id
+		WHERE m.meeting_date = ?
+		ORDER BY m.duration_minutes DESC, m.title ASC
+	`
+
+	SelectMeetingsByWeek = `
+		SELECT m.id, m.project_id, m.title, m.meeting_date, m.duration_minutes,
+		       m.attendees, m.notes, m.created_at, m.updated_at, p.name as project_name
+		FROM project_meetings m
+		INNER JOIN projects p ON m.project_id = p.id
+		WHERE m.meeting_date >= ? AND m.meeting_date < ?
+		ORDER BY m.meeting_date ASC, m.duration_minutes DESC
+	`
 )
 
 // Note queries
@@ -187,10 +214,10 @@ const (
 		SELECT id, project_id, title, description, status, target_date, created_at, updated_at
 		FROM project_goals
 		WHERE project_id = ?
-		ORDER BY CASE status 
-			WHEN 'in_progress' THEN 1 
-			WHEN 'pending' THEN 2 
-			WHEN 'completed' THEN 3 
+		ORDER BY CASE status
+			WHEN 'in_progress' THEN 1
+			WHEN 'pending' THEN 2
+			WHEN 'completed' THEN 3
 		END, created_at DESC
 	`
 
