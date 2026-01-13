@@ -15,6 +15,7 @@ func RunMigrations(db *sql.DB) error {
 		createNotesTable,
 		createGoalsTable,
 		createNewIndexes,
+		createTemplatesTable,
 	}
 
 	for _, migration := range migrations {
@@ -113,6 +114,17 @@ CREATE INDEX IF NOT EXISTS idx_meetings_date ON project_meetings(meeting_date);
 CREATE INDEX IF NOT EXISTS idx_notes_project_id ON project_notes(project_id);
 CREATE INDEX IF NOT EXISTS idx_goals_project_id ON project_goals(project_id);
 CREATE INDEX IF NOT EXISTS idx_goals_status ON project_goals(status);
+`
+
+const createTemplatesTable = `
+CREATE TABLE IF NOT EXISTS project_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    total_sold_hours INTEGER NOT NULL,
+    specialist_hours INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `
 
 // addPersistentColumnIfNotExists adds is_persistent column only if it doesn't exist

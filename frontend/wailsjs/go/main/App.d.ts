@@ -15,6 +15,10 @@ export function CreateNote(arg1:models.CreateNoteInput):Promise<models.Note>;
 
 export function CreateProject(arg1:models.CreateProjectInput):Promise<models.ProjectWithStats>;
 
+export function CreateProjectFromTemplate(arg1:main.CreateProjectFromTemplateInput):Promise<models.ProjectWithStats>;
+
+export function CreateTemplate(arg1:number,arg2:string):Promise<main.ProjectTemplate>;
+
 export function DeleteGoal(arg1:number):Promise<void>;
 
 export function DeleteMeeting(arg1:number):Promise<void>;
@@ -22,6 +26,8 @@ export function DeleteMeeting(arg1:number):Promise<void>;
 export function DeleteNote(arg1:number):Promise<void>;
 
 export function DeleteProject(arg1:number):Promise<void>;
+
+export function DeleteTemplate(arg1:number):Promise<void>;
 
 export function ExportAllProjects():Promise<string>;
 
@@ -60,6 +66,10 @@ export function GetNote(arg1:number):Promise<models.Note>;
 export function GetNotes(arg1:number):Promise<Array<models.Note>>;
 
 export function GetProject(arg1:number):Promise<models.ProjectWithStats>;
+
+export function GetTemplate(arg1:number):Promise<main.ProjectTemplate>;
+
+export function GetTemplates():Promise<Array<main.ProjectTemplate>>;
 
 export function GetVarianceReport(arg1:string,arg2:string):Promise<Array<main.VarianceReport>>;
 

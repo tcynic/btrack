@@ -353,3 +353,27 @@ const (
 		ORDER BY we.week_start_date ASC
 	`
 )
+
+// Template queries
+const (
+	InsertTemplate = `
+		INSERT INTO project_templates (name, total_sold_hours, specialist_hours)
+		VALUES (?, ?, ?)
+	`
+
+	SelectAllTemplates = `
+		SELECT id, name, total_sold_hours, specialist_hours, created_at, updated_at
+		FROM project_templates
+		ORDER BY created_at DESC
+	`
+
+	SelectTemplateByID = `
+		SELECT id, name, total_sold_hours, specialist_hours, created_at, updated_at
+		FROM project_templates
+		WHERE id = ?
+	`
+
+	DeleteTemplate = `
+		DELETE FROM project_templates WHERE id = ?
+	`
+)

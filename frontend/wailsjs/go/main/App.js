@@ -26,6 +26,14 @@ export function CreateProject(arg1) {
   return window['go']['main']['App']['CreateProject'](arg1);
 }
 
+export function CreateProjectFromTemplate(arg1) {
+  return window['go']['main']['App']['CreateProjectFromTemplate'](arg1);
+}
+
+export function CreateTemplate(arg1, arg2) {
+  return window['go']['main']['App']['CreateTemplate'](arg1, arg2);
+}
+
 export function DeleteGoal(arg1) {
   return window['go']['main']['App']['DeleteGoal'](arg1);
 }
@@ -40,6 +48,10 @@ export function DeleteNote(arg1) {
 
 export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
+}
+
+export function DeleteTemplate(arg1) {
+  return window['go']['main']['App']['DeleteTemplate'](arg1);
 }
 
 export function ExportAllProjects() {
@@ -116,6 +128,14 @@ export function GetNotes(arg1) {
 
 export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
+}
+
+export function GetTemplate(arg1) {
+  return window['go']['main']['App']['GetTemplate'](arg1);
+}
+
+export function GetTemplates() {
+  return window['go']['main']['App']['GetTemplates']();
 }
 
 export function GetVarianceReport(arg1, arg2) {

@@ -36,6 +36,24 @@ export namespace main {
 	        this.projectCount = source["projectCount"];
 	    }
 	}
+	export class CreateProjectFromTemplateInput {
+	    templateId: number;
+	    name: string;
+	    startDate: string;
+	    endDate: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateProjectFromTemplateInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.templateId = source["templateId"];
+	        this.name = source["name"];
+	        this.startDate = source["startDate"];
+	        this.endDate = source["endDate"];
+	    }
+	}
 	export class DashboardSummary {
 	    totalActiveProjects: number;
 	    atRiskProjects: number;
@@ -119,6 +137,48 @@ export namespace main {
 	        this.projectCount = source["projectCount"];
 	        this.variance = source["variance"];
 	    }
+	}
+	export class ProjectTemplate {
+	    id: number;
+	    name: string;
+	    totalSoldHours: number;
+	    specialistHours: number;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectTemplate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.totalSoldHours = source["totalSoldHours"];
+	        this.specialistHours = source["specialistHours"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class VarianceReport {
 	    projectId: number;
