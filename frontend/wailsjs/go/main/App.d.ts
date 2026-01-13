@@ -29,6 +29,8 @@ export function ExportWeeklyReport(arg1:string,arg2:string):Promise<string>;
 
 export function GetAllProjects(arg1:boolean):Promise<Array<models.ProjectWithStats>>;
 
+export function GetCapacityUtilization(arg1:string,arg2:string):Promise<Array<main.CapacityWeek>>;
+
 export function GetDashboardData(arg1:number,arg2:number):Promise<Array<main.DashboardWeekData>>;
 
 export function GetDashboardSummary():Promise<main.DashboardSummary>;
@@ -45,11 +47,15 @@ export function GetMeetingsByDate(arg1:string):Promise<Array<models.MeetingWithP
 
 export function GetMeetingsByWeek(arg1:string):Promise<Array<models.MeetingWithProject>>;
 
+export function GetMonthlyTrends(arg1:number):Promise<Array<main.MonthlyTrend>>;
+
 export function GetNote(arg1:number):Promise<models.Note>;
 
 export function GetNotes(arg1:number):Promise<Array<models.Note>>;
 
 export function GetProject(arg1:number):Promise<models.ProjectWithStats>;
+
+export function GetVarianceReport(arg1:string,arg2:string):Promise<Array<main.VarianceReport>>;
 
 export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWithStatus>>;
 

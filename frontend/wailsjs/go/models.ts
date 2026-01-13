@@ -1,5 +1,25 @@
 export namespace main {
 	
+	export class CapacityWeek {
+	    weekStart: string;
+	    plannedHours: number;
+	    actualHours: number;
+	    utilization: number;
+	    projectCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CapacityWeek(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.weekStart = source["weekStart"];
+	        this.plannedHours = source["plannedHours"];
+	        this.actualHours = source["actualHours"];
+	        this.utilization = source["utilization"];
+	        this.projectCount = source["projectCount"];
+	    }
+	}
 	export class DashboardSummary {
 	    totalActiveProjects: number;
 	    atRiskProjects: number;
@@ -36,6 +56,48 @@ export namespace main {
 	        this.totalPlannedHours = source["totalPlannedHours"];
 	        this.totalActualHours = source["totalActualHours"];
 	        this.projectCount = source["projectCount"];
+	    }
+	}
+	export class MonthlyTrend {
+	    month: string;
+	    plannedHours: number;
+	    actualHours: number;
+	    projectCount: number;
+	    variance: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new MonthlyTrend(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.month = source["month"];
+	        this.plannedHours = source["plannedHours"];
+	        this.actualHours = source["actualHours"];
+	        this.projectCount = source["projectCount"];
+	        this.variance = source["variance"];
+	    }
+	}
+	export class VarianceReport {
+	    projectId: number;
+	    projectName: string;
+	    planned: number;
+	    actual: number;
+	    variance: number;
+	    percentage: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new VarianceReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.projectName = source["projectName"];
+	        this.planned = source["planned"];
+	        this.actual = source["actual"];
+	        this.variance = source["variance"];
+	        this.percentage = source["percentage"];
 	    }
 	}
 

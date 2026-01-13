@@ -54,6 +54,10 @@ export function GetAllProjects(arg1) {
   return window['go']['main']['App']['GetAllProjects'](arg1);
 }
 
+export function GetCapacityUtilization(arg1, arg2) {
+  return window['go']['main']['App']['GetCapacityUtilization'](arg1, arg2);
+}
+
 export function GetDashboardData(arg1, arg2) {
   return window['go']['main']['App']['GetDashboardData'](arg1, arg2);
 }
@@ -86,6 +90,10 @@ export function GetMeetingsByWeek(arg1) {
   return window['go']['main']['App']['GetMeetingsByWeek'](arg1);
 }
 
+export function GetMonthlyTrends(arg1) {
+  return window['go']['main']['App']['GetMonthlyTrends'](arg1);
+}
+
 export function GetNote(arg1) {
   return window['go']['main']['App']['GetNote'](arg1);
 }
@@ -96,6 +104,10 @@ export function GetNotes(arg1) {
 
 export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
+}
+
+export function GetVarianceReport(arg1, arg2) {
+  return window['go']['main']['App']['GetVarianceReport'](arg1, arg2);
 }
 
 export function GetWeeklyEntries(arg1) {

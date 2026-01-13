@@ -4,10 +4,11 @@ import { Layout } from "./components/layout";
 import { Dashboard } from "./components/dashboard";
 import { WeekView } from "./components/week";
 import { ProjectList, ProjectDetail } from "./components/projects";
+import { ReportsView } from "./components/reports";
 import type { ProjectWithStats } from "./types";
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "week" | "projects">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "week" | "projects" | "reports">(
     "dashboard",
   );
   const [selectedProject, setSelectedProject] =
@@ -27,6 +28,8 @@ function AppContent() {
         <Dashboard />
       ) : activeTab === "week" ? (
         <WeekView />
+      ) : activeTab === "reports" ? (
+        <ReportsView />
       ) : selectedProject ? (
         <ProjectDetail project={selectedProject} onBack={handleBackToList} />
       ) : (

@@ -290,3 +290,50 @@ const (
 		LIMIT 50
 	`
 )
+
+// Report queries
+const (
+	SelectMonthlyTrends = `
+		SELECT
+			strftime('%Y-%m', we.week_start_date) as month,
+			SUM(we.planned_hours) as total_planned,
+			SUM(we.actual_hours) as total_actual,
+			COUNT(DISTINCT we.project_id) as project_count
+		FROM weekly_entries we
+		INNER JOIN projects p ON we.project_id = p.id
+		WHERE p.is_active = 1 AND we.week_start_date >= ?
+		GROUP BY month
+		ORDER BY month ASC
+	`
+
+	SelectVarianceReport = `
+		SELECT
+			p.id,
+			p.name,
+			COALESCE(SUM(we.planned_hours), 0) as total_planned,
+			COALESCE(SUM(we.actual_hours), 0) as total_actual
+		FROM projects p
+		LEFT JOIN weekly_entries we ON p.id = we.project_id 
+			AND we.week_start_date >= ? 
+			AND we.week_start_date <= ?
+		WHERE p.is_active = 1
+		GROUP BY p.id, p.name
+		HAVING total_planned > 0
+		ORDER BY total_planned DESC
+	`
+
+	SelectCapacityUtilization = `
+		SELECT
+			we.week_start_date,
+			SUM(we.planned_hours) as total_planned,
+			SUM(we.actual_hours) as total_actual,
+			COUNT(DISTINCT we.project_id) as project_count
+		FROM weekly_entries we
+		INNER JOIN projects p ON we.project_id = p.id
+		WHERE p.is_active = 1 
+			AND we.week_start_date >= ? 
+			AND we.week_start_date <= ?
+		GROUP BY we.week_start_date
+		ORDER BY we.week_start_date ASC
+	`
+)
