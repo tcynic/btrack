@@ -34,7 +34,7 @@ cd frontend && npm run build # Build frontend assets only
 **Domain Logic** (all methods exposed to frontend via Wails bindings):
 - **project.go**: CRUD operations for projects with automatic weekly entry generation/recalculation
   - `CreateProject`: Creates project and generates frontloaded weekly entries
-  - `UpdateProject`: Updates project; recalculates future weeks if hours/dates change, preserves past weeks
+  - `UpdateProject`: Updates project; recalculates future weeks if hours/dates change, preserves past weeks (skips recalc for persistent projects)
   - `GetAllProjects`, `GetProject`, `DeleteProject`, `ToggleProjectActive`
 - **calculator.go**: Frontloaded distribution algorithm
   - `CalculateDistribution`: MyHours = TotalSoldHours - SpecialistHours, distributed across weeks with remainder frontloaded to earliest weeks
@@ -42,19 +42,31 @@ cd frontend && npm run build # Build frontend assets only
 - **weekly_entry.go**: Weekly entry operations
   - `GetWeeklyEntries`: Returns entries with status (past/current/future week)
   - `UpdateActualHours`: Updates actual hours (only allowed for past/current weeks)
+  - `CreateWeeklyEntry`: Manually create weekly entries (for persistent projects)
 - **dashboard.go**: Aggregated statistics
   - `GetDashboardData`: Returns weekly aggregates across all projects
   - `GetDashboardSummary`: High-level stats (active projects, this/next week totals)
+- **meeting.go**: CRUD operations for project meetings
+  - `CreateMeeting`, `GetMeetings`, `GetMeeting`, `UpdateMeeting`, `DeleteMeeting`
+  - `GetMeetingsByDate`: Returns all meetings for a specific date across projects
+- **note.go**: CRUD operations for project notes (markdown support in frontend)
+  - `CreateNote`, `GetNotes`, `GetNote`, `UpdateNote`, `DeleteNote`
+- **goal.go**: CRUD operations for project goals with status tracking
+  - `CreateGoal`, `GetGoals`, `GetGoal`, `UpdateGoal`, `DeleteGoal`
+  - `UpdateGoalStatus`: Update only status field (pending/in_progress/completed/cancelled)
 
 **Data Layer**:
 - **internal/database/**: SQLite setup with modernc.org/sqlite driver
   - `database.go`: Initializes DB at `~/Library/Application Support/btrack/btrack.db` (macOS)
-  - `migrations.go`: Schema with `projects` and `weekly_entries` tables (foreign key cascade deletes)
-  - `queries.go`: SQL query constants
+  - `migrations.go`: Schema with `projects`, `weekly_entries`, `project_meetings`, `project_notes`, `project_goals` tables; includes `SeedPersistentProjects()` to create "Management" and "Internal Projects" on first run
+  - `queries.go`: SQL query constants for all CRUD operations
 - **internal/models/**: Domain models and validation
   - `project.go`: Project, ProjectWithStats, CreateProjectInput, UpdateProjectInput
   - `weekly_entry.go`: WeeklyEntry, WeeklyEntryWithStatus (includes IsPastWeek, Status calculations)
-  - `errors.go`: Custom error types
+  - `meeting.go`: Meeting, MeetingWithProject, CreateMeetingInput, UpdateMeetingInput
+  - `note.go`: Note, CreateNoteInput, UpdateNoteInput
+  - `goal.go`: Goal, CreateGoalInput, UpdateGoalInput (with status constants: pending/in_progress/completed/cancelled)
+  - `errors.go`: Custom error types for all domain objects
 
 ### Frontend Structure (React/TypeScript + Vite)
 
@@ -73,15 +85,29 @@ cd frontend && npm run build # Build frontend assets only
 ### Database Schema
 
 **projects**:
-- Stores client projects with total_sold_hours, specialist_hours, date range, is_active flag
+- Stores client projects with total_sold_hours, specialist_hours, date range, is_active, is_persistent flags
 - MyHours calculated as: TotalSoldHours - SpecialistHours
+- Persistent projects ("Management", "Internal Projects"): special projects with dates 1900-2099, require manual weekly entry creation
 
 **weekly_entries**:
 - One entry per project per week (Monday start dates)
-- planned_hours: Calculated via frontloading algorithm
+- planned_hours: Calculated via frontloading algorithm (for non-persistent projects)
 - actual_hours: User-entered for past/current weeks only
 - Foreign key cascade: Deleting project removes all weekly entries
 - Unique constraint: (project_id, week_start_date)
+
+**project_meetings**:
+- Meeting records linked to projects: title, date, duration_minutes, attendees, notes
+- Foreign key cascade deletes
+
+**project_notes**:
+- Notes linked to projects: title, content (markdown)
+- Foreign key cascade deletes
+
+**project_goals**:
+- Goals linked to projects: title, description, status, target_date
+- Status values: pending, in_progress, completed, cancelled
+- Foreign key cascade deletes
 
 ## Development Workflow
 
@@ -110,9 +136,11 @@ cd frontend && npm run build # Build frontend assets only
 
 **Weekly Entry Editing**: `UpdateActualHours` enforces that only past/current weeks can be edited (< next Monday).
 
-**Project Updates**: When updating a project, the system preserves past/current week actual hours and only recalculates future weeks if hours/dates change.
+**Project Updates**: When updating a project, the system preserves past/current week actual hours and only recalculates future weeks if hours/dates change. Persistent projects skip automatic recalculation entirely.
 
 **Frontloading Algorithm**: Extra hours from MyHours % Weeks are distributed to the earliest weeks first (e.g., 10 hours / 3 weeks → 4, 3, 3).
+
+**Persistent Projects**: "Management" and "Internal Projects" are special projects auto-seeded on first run with is_persistent=1. These don't use the frontloading algorithm and require manual weekly entry creation via `CreateWeeklyEntry`.
 
 ## Configuration Files
 
