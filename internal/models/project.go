@@ -11,17 +11,36 @@ type Project struct {
 	StartDate       string    `json:"startDate"`
 	EndDate         string    `json:"endDate"`
 	IsActive        bool      `json:"isActive"`
+	IsPersistent    bool      `json:"isPersistent"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+// HealthStatus represents the health state of a project
+type HealthStatus string
+
+const (
+	HealthOnTrack    HealthStatus = "on_track"
+	HealthAtRisk     HealthStatus = "at_risk"
+	HealthOverBudget HealthStatus = "over_budget"
+	HealthCompleted  HealthStatus = "completed"
+)
+
+// ProjectHealth contains health status information
+type ProjectHealth struct {
+	Status   HealthStatus `json:"status"`
+	Message  string       `json:"message"`
+	Severity string       `json:"severity"` // "info", "warning", "error"
 }
 
 // ProjectWithStats includes computed statistics
 type ProjectWithStats struct {
 	Project
-	MyHours           int `json:"myHours"`
-	TotalWeeks        int `json:"totalWeeks"`
-	TotalPlannedHours int `json:"totalPlannedHours"`
-	TotalActualHours  int `json:"totalActualHours"`
+	MyHours           int            `json:"myHours"`
+	TotalWeeks        int            `json:"totalWeeks"`
+	TotalPlannedHours int            `json:"totalPlannedHours"`
+	TotalActualHours  int            `json:"totalActualHours"`
+	Health            ProjectHealth  `json:"health"`
 }
 
 // CreateProjectInput is the input for creating a new project

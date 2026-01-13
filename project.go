@@ -112,13 +112,15 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 			return nil, fmt.Errorf("failed to get project stats: %w", err)
 		}
 
-		projects = append(projects, models.ProjectWithStats{
+		projectWithStats := models.ProjectWithStats{
 			Project:           p,
 			MyHours:           p.TotalSoldHours - p.SpecialistHours,
 			TotalWeeks:        stats.TotalWeeks,
 			TotalPlannedHours: stats.TotalPlanned,
 			TotalActualHours:  stats.TotalActual,
-		})
+		}
+		projectWithStats.Health = calculateProjectHealth(projectWithStats)
+		projects = append(projects, projectWithStats)
 	}
 
 	if projects == nil {
@@ -160,13 +162,15 @@ func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
 		return nil, fmt.Errorf("failed to get project stats: %w", err)
 	}
 
-	return &models.ProjectWithStats{
+	projectWithStats := &models.ProjectWithStats{
 		Project:           p,
 		MyHours:           p.TotalSoldHours - p.SpecialistHours,
 		TotalWeeks:        stats.TotalWeeks,
 		TotalPlannedHours: stats.TotalPlanned,
 		TotalActualHours:  stats.TotalActual,
-	}, nil
+	}
+	projectWithStats.Health = calculateProjectHealth(*projectWithStats)
+	return projectWithStats, nil
 }
 
 // UpdateProject updates project details and recalculates weekly entries if needed
@@ -413,13 +417,15 @@ func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
 			return nil, fmt.Errorf("failed to get project stats: %w", err)
 		}
 
-		projects = append(projects, models.ProjectWithStats{
+		projectWithStats := models.ProjectWithStats{
 			Project:           p,
 			MyHours:           p.TotalSoldHours - p.SpecialistHours,
 			TotalWeeks:        stats.TotalWeeks,
 			TotalPlannedHours: stats.TotalPlanned,
 			TotalActualHours:  stats.TotalActual,
-		})
+		}
+		projectWithStats.Health = calculateProjectHealth(projectWithStats)
+		projects = append(projects, projectWithStats)
 	}
 
 	if projects == nil {
@@ -427,6 +433,67 @@ func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
 	}
 
 	return projects, nil
+}
+
+// calculateProjectHealth determines the health status of a project
+func calculateProjectHealth(p models.ProjectWithStats) models.ProjectHealth {
+	// Parse end date
+	endDate, err := time.Parse("2006-01-02", p.EndDate)
+	if err != nil {
+		// If we can't parse the date, default to on_track
+		return models.ProjectHealth{
+			Status:   models.HealthOnTrack,
+			Message:  "Project status unavailable",
+			Severity: "info",
+		}
+	}
+
+	today := time.Now()
+	isPastEnd := today.After(endDate)
+	hoursRemaining := p.TotalPlannedHours - p.TotalActualHours
+	variance := float64(p.TotalActualHours) / float64(p.TotalPlannedHours)
+
+	// Completed: past end date
+	if isPastEnd {
+		if hoursRemaining > 0 {
+			return models.ProjectHealth{
+				Status:   models.HealthCompleted,
+				Message:  fmt.Sprintf("Project ended with %d hours remaining", hoursRemaining),
+				Severity: "info",
+			}
+		}
+		return models.ProjectHealth{
+			Status:   models.HealthCompleted,
+			Message:  "Project completed",
+			Severity: "info",
+		}
+	}
+
+	// Over budget: actual > planned
+	if p.TotalActualHours > p.TotalPlannedHours {
+		overBy := p.TotalActualHours - p.TotalPlannedHours
+		return models.ProjectHealth{
+			Status:   models.HealthOverBudget,
+			Message:  fmt.Sprintf("Over budget by %d hours", overBy),
+			Severity: "error",
+		}
+	}
+
+	// At risk: actual > 80% of planned
+	if variance > 0.8 && hoursRemaining > 0 {
+		return models.ProjectHealth{
+			Status:   models.HealthAtRisk,
+			Message:  fmt.Sprintf("%.0f%% capacity used, %d hours remaining", variance*100, hoursRemaining),
+			Severity: "warning",
+		}
+	}
+
+	// On track: everything normal
+	return models.ProjectHealth{
+		Status:   models.HealthOnTrack,
+		Message:  fmt.Sprintf("%d hours remaining", hoursRemaining),
+		Severity: "info",
+	}
 }
 
 // getProjectStats retrieves aggregated stats for a project
