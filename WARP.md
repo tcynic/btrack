@@ -36,6 +36,7 @@ cd frontend && npm run build # Build frontend assets only
   - `CreateProject`: Creates project and generates frontloaded weekly entries
   - `UpdateProject`: Updates project; recalculates future weeks if hours/dates change, preserves past weeks (skips recalc for persistent projects)
   - `GetAllProjects`, `GetProject`, `DeleteProject`, `ToggleProjectActive`
+  - `SearchProjects`: Search projects by name
 - **calculator.go**: Frontloaded distribution algorithm
   - `CalculateDistribution`: MyHours = TotalSoldHours - SpecialistHours, distributed across weeks with remainder frontloaded to earliest weeks
   - Helper functions: `calculateWeeksBetween`, `getMonday`, `getCurrentWeekMonday`
@@ -49,23 +50,46 @@ cd frontend && npm run build # Build frontend assets only
 - **meeting.go**: CRUD operations for project meetings
   - `CreateMeeting`, `GetMeetings`, `GetMeeting`, `UpdateMeeting`, `DeleteMeeting`
   - `GetMeetingsByDate`: Returns all meetings for a specific date across projects
+  - `GetMeetingsByWeek`: Returns all meetings for a 7-day period
+  - `SearchMeetings`: Search meetings by title, notes, or attendees
 - **note.go**: CRUD operations for project notes (markdown support in frontend)
   - `CreateNote`, `GetNotes`, `GetNote`, `UpdateNote`, `DeleteNote`
+  - `SearchNotes`: Search notes by title or content (returns NoteWithProject)
 - **goal.go**: CRUD operations for project goals with status tracking
   - `CreateGoal`, `GetGoals`, `GetGoal`, `UpdateGoal`, `DeleteGoal`
   - `UpdateGoalStatus`: Update only status field (pending/in_progress/completed/cancelled)
+  - `GetGoalStats`: Returns goal statistics for a project (counts by status, completion rate)
+  - `SearchGoals`: Search goals by title or description (returns GoalWithProject)
+- **template.go**: Project template management
+  - `CreateTemplate`: Save a project as a reusable template
+  - `GetTemplates`, `GetTemplate`: Retrieve templates
+  - `CreateProjectFromTemplate`: Create new project from template with custom dates
+  - `DeleteTemplate`: Remove template
+- **backup.go**: Database backup and restore
+  - `GetBackupInfo`: Returns database path, size, last modified time
+  - `CreateBackup`: Opens save dialog, copies database to user-selected location
+  - `RestoreBackup`: Opens file dialog, restores database from backup (creates temp backup first)
+- **export.go**: CSV export functionality
+  - `ExportWeeklyReport`: Export weekly hours data for date range
+  - `ExportProjectSummary`: Export single project data with all weekly entries
+  - `ExportAllProjects`: Export summary data for all active projects
+- **reports.go**: Analytics and reporting
+  - `GetMonthlyTrends`: Returns monthly aggregated data (planned/actual/variance) for N months back
+  - `GetVarianceReport`: Planned vs actual analysis by project for date range
+  - `GetCapacityUtilization`: Weekly capacity utilization data with percentages
 
 **Data Layer**:
 - **internal/database/**: SQLite setup with modernc.org/sqlite driver
   - `database.go`: Initializes DB at `~/Library/Application Support/btrack/btrack.db` (macOS)
-  - `migrations.go`: Schema with `projects`, `weekly_entries`, `project_meetings`, `project_notes`, `project_goals` tables; includes `SeedPersistentProjects()` to create "Management" and "Internal Projects" on first run
-  - `queries.go`: SQL query constants for all CRUD operations
+  - `migrations.go`: Schema with `projects`, `weekly_entries`, `project_meetings`, `project_notes`, `project_goals`, `project_templates` tables; includes `SeedPersistentProjects()` to create "Management" and "Internal Projects" on first run
+  - `queries.go`: SQL query constants for all CRUD, search, export, and reporting operations
 - **internal/models/**: Domain models and validation
-  - `project.go`: Project, ProjectWithStats, CreateProjectInput, UpdateProjectInput
+  - `project.go`: Project, ProjectWithStats, ProjectHealth, CreateProjectInput, UpdateProjectInput
   - `weekly_entry.go`: WeeklyEntry, WeeklyEntryWithStatus (includes IsPastWeek, Status calculations)
   - `meeting.go`: Meeting, MeetingWithProject, CreateMeetingInput, UpdateMeetingInput
   - `note.go`: Note, CreateNoteInput, UpdateNoteInput
   - `goal.go`: Goal, CreateGoalInput, UpdateGoalInput (with status constants: pending/in_progress/completed/cancelled)
+  - `search.go`: NoteWithProject, GoalWithProject (models for search results with parent project names)
   - `errors.go`: Custom error types for all domain objects
 
 ### Frontend Structure (React/TypeScript + Vite)
@@ -109,6 +133,11 @@ cd frontend && npm run build # Build frontend assets only
 - Status values: pending, in_progress, completed, cancelled
 - Foreign key cascade deletes
 
+**project_templates**:
+- Saved project templates: name, total_sold_hours, specialist_hours
+- Used to quickly create new projects with predefined hour allocations
+- No foreign key dependencies
+
 ## Development Workflow
 
 ### Adding Backend Methods
@@ -121,6 +150,7 @@ cd frontend && npm run build # Build frontend assets only
 1. Modify schema in `internal/database/migrations.go`
 2. Update queries in `internal/database/queries.go` if needed
 3. For development, delete `~/Library/Application Support/btrack/btrack.db` to reset schema
+4. Note: Database file is at `~/Library/Application Support/btrack/btrack.db` on macOS
 
 ### Frontend Development
 - Edit components in `frontend/src/`
@@ -141,6 +171,14 @@ cd frontend && npm run build # Build frontend assets only
 **Frontloading Algorithm**: Extra hours from MyHours % Weeks are distributed to the earliest weeks first (e.g., 10 hours / 3 weeks → 4, 3, 3).
 
 **Persistent Projects**: "Management" and "Internal Projects" are special projects auto-seeded on first run with is_persistent=1. These don't use the frontloading algorithm and require manual weekly entry creation via `CreateWeeklyEntry`.
+
+**Backup/Restore**: `CreateBackup` and `RestoreBackup` use Wails runtime dialogs for file selection. During restore, the current DB is closed, a temporary backup is created (`.pre-restore`), the restore is performed, and the DB is reopened. If restore fails, the temp backup is used to rollback.
+
+**Search Functionality**: Search methods (`SearchProjects`, `SearchNotes`, `SearchGoals`, `SearchMeetings`) use SQL LIKE queries with `%query%` pattern matching. Search results for notes, goals, and meetings include parent project names via JOIN queries.
+
+**CSV Export**: Export methods return CSV strings (not files). Frontend must handle saving the returned string to a file. Export includes headers and properly formatted data with variance calculations.
+
+**Project Health**: Projects automatically calculate health status (on_track/at_risk/over_budget/completed) based on actual vs planned hours, end date, and current date. Persistent projects always show "on_track" status.
 
 ## Configuration Files
 
