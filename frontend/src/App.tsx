@@ -6,6 +6,8 @@ import { WeekView } from "./components/week";
 import { ProjectList, ProjectDetail } from "./components/projects";
 import { ReportsView } from "./components/reports";
 import { SettingsView } from "./components/settings";
+import { KeyboardShortcutsModal } from "./components/ui";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import type { ProjectWithStats } from "./types";
 
 function AppContent() {
@@ -14,6 +16,10 @@ function AppContent() {
   );
   const [selectedProject, setSelectedProject] =
     useState<ProjectWithStats | null>(null);
+
+  const { showHelp, setShowHelp } = useKeyboardShortcuts({
+    onTabChange: setActiveTab,
+  });
 
   const handleProjectSelect = (project: ProjectWithStats) => {
     setSelectedProject(project);
@@ -24,21 +30,24 @@ function AppContent() {
   };
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === "dashboard" ? (
-        <Dashboard />
-      ) : activeTab === "week" ? (
-        <WeekView />
-      ) : activeTab === "reports" ? (
-        <ReportsView />
-      ) : activeTab === "settings" ? (
-        <SettingsView />
-      ) : selectedProject ? (
-        <ProjectDetail project={selectedProject} onBack={handleBackToList} />
-      ) : (
-        <ProjectList onProjectSelect={handleProjectSelect} />
-      )}
-    </Layout>
+    <>
+      <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+        {activeTab === "dashboard" ? (
+          <Dashboard />
+        ) : activeTab === "week" ? (
+          <WeekView />
+        ) : activeTab === "reports" ? (
+          <ReportsView />
+        ) : activeTab === "settings" ? (
+          <SettingsView />
+        ) : selectedProject ? (
+          <ProjectDetail project={selectedProject} onBack={handleBackToList} />
+        ) : (
+          <ProjectList onProjectSelect={handleProjectSelect} />
+        )}
+      </Layout>
+      <KeyboardShortcutsModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+    </>
   );
 }
 

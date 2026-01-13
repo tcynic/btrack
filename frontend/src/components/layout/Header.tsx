@@ -23,6 +23,9 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
               />
             </svg>
             <h1 className="text-xl font-bold text-gray-900">Bandwidth Tracker</h1>
+            <span className="text-xs text-gray-400 ml-4">
+              Press <kbd className="px-1 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-300 rounded">?</kbd> for shortcuts
+            </span>
           </div>
           <nav className="flex space-x-1">
             <button
