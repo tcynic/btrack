@@ -60,6 +60,14 @@ cd frontend && npm run build # Build frontend assets only
   - `UpdateGoalStatus`: Update only status field (pending/in_progress/completed/cancelled)
   - `GetGoalStats`: Returns goal statistics for a project (counts by status, completion rate)
   - `SearchGoals`: Search goals by title or description (returns GoalWithProject)
+- **task.go**: Task management with linking capabilities
+  - `CreateTask`, `GetTask`, `GetTasksByProject`, `GetTasksBySource`
+  - `GetAllTasks`: Returns all tasks across projects with filters (status, project)
+  - `UpdateTask`, `UpdateTaskStatus`, `DeleteTask`
+  - `SearchTasks`: Search tasks by title or description (returns TaskWithContext)
+  - Tasks can be standalone or linked to meetings/notes via source_type and source_id
+  - Status values: pending, in_progress, completed
+  - Priority values: low, medium, high
 - **template.go**: Project template management
   - `CreateTemplate`: Save a project as a reusable template
   - `GetTemplates`, `GetTemplate`: Retrieve templates
@@ -89,7 +97,8 @@ cd frontend && npm run build # Build frontend assets only
   - `meeting.go`: Meeting, MeetingWithProject, CreateMeetingInput, UpdateMeetingInput
   - `note.go`: Note, CreateNoteInput, UpdateNoteInput
   - `goal.go`: Goal, CreateGoalInput, UpdateGoalInput (with status constants: pending/in_progress/completed/cancelled)
-  - `search.go`: NoteWithProject, GoalWithProject (models for search results with parent project names)
+  - `task.go`: Task, TaskWithContext, CreateTaskInput, UpdateTaskInput (with status: pending/in_progress/completed; priority: low/medium/high)
+  - `search.go`: NoteWithProject, GoalWithProject, TaskWithContext (models for search results with parent project names)
   - `errors.go`: Custom error types for all domain objects
 
 ### Frontend Structure (React/TypeScript + Vite)
@@ -138,6 +147,13 @@ cd frontend && npm run build # Build frontend assets only
 - Used to quickly create new projects with predefined hour allocations
 - No foreign key dependencies
 
+**tasks**:
+- Tasks linked to projects: title, description, status, priority, due_date
+- Can be standalone (source_type='standalone') or linked to meetings/notes (source_type='meeting'/'note' with source_id)
+- Status values: pending, in_progress, completed
+- Priority values: low, medium, high
+- Foreign key cascade deletes
+
 ## Development Workflow
 
 ### Adding Backend Methods
@@ -174,7 +190,7 @@ cd frontend && npm run build # Build frontend assets only
 
 **Backup/Restore**: `CreateBackup` and `RestoreBackup` use Wails runtime dialogs for file selection. During restore, the current DB is closed, a temporary backup is created (`.pre-restore`), the restore is performed, and the DB is reopened. If restore fails, the temp backup is used to rollback.
 
-**Search Functionality**: Search methods (`SearchProjects`, `SearchNotes`, `SearchGoals`, `SearchMeetings`) use SQL LIKE queries with `%query%` pattern matching. Search results for notes, goals, and meetings include parent project names via JOIN queries.
+**Search Functionality**: Search methods (`SearchProjects`, `SearchNotes`, `SearchGoals`, `SearchMeetings`, `SearchTasks`) use SQL LIKE queries with `%query%` pattern matching. Search results for notes, goals, meetings, and tasks include parent project names via JOIN queries.
 
 **CSV Export**: Export methods return CSV strings (not files). Frontend must handle saving the returned string to a file. Export includes headers and properly formatted data with variance calculations.
 
