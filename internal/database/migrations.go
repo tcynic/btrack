@@ -16,6 +16,8 @@ func RunMigrations(db *sql.DB) error {
 		createGoalsTable,
 		createNewIndexes,
 		createTemplatesTable,
+		createTasksTable,
+		createTaskIndexes,
 	}
 
 	for _, migration := range migrations {
@@ -125,6 +127,30 @@ CREATE TABLE IF NOT EXISTS project_templates (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+`
+
+const createTasksTable = `
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    source_type TEXT NOT NULL DEFAULT 'standalone',
+    source_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    priority TEXT NOT NULL DEFAULT 'medium',
+    due_date TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+`
+
+const createTaskIndexes = `
+CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_source ON tasks(source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
 `
 
 // addPersistentColumnIfNotExists adds is_persistent column only if it doesn't exist

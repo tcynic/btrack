@@ -17,6 +17,8 @@ export function CreateProject(arg1:models.CreateProjectInput):Promise<models.Pro
 
 export function CreateProjectFromTemplate(arg1:main.CreateProjectFromTemplateInput):Promise<models.ProjectWithStats>;
 
+export function CreateTask(arg1:models.CreateTaskInput):Promise<models.Task>;
+
 export function CreateTemplate(arg1:number,arg2:string):Promise<main.ProjectTemplate>;
 
 export function DeleteGoal(arg1:number):Promise<void>;
@@ -27,6 +29,8 @@ export function DeleteNote(arg1:number):Promise<void>;
 
 export function DeleteProject(arg1:number):Promise<void>;
 
+export function DeleteTask(arg1:number):Promise<void>;
+
 export function DeleteTemplate(arg1:number):Promise<void>;
 
 export function ExportAllProjects():Promise<string>;
@@ -36,6 +40,8 @@ export function ExportProjectSummary(arg1:number):Promise<string>;
 export function ExportWeeklyReport(arg1:string,arg2:string):Promise<string>;
 
 export function GetAllProjects(arg1:boolean):Promise<Array<models.ProjectWithStats>>;
+
+export function GetAllTasks(arg1:string,arg2:number):Promise<Array<models.TaskWithContext>>;
 
 export function GetBackupInfo():Promise<main.BackupInfo>;
 
@@ -67,6 +73,12 @@ export function GetNotes(arg1:number):Promise<Array<models.Note>>;
 
 export function GetProject(arg1:number):Promise<models.ProjectWithStats>;
 
+export function GetTask(arg1:number):Promise<models.Task>;
+
+export function GetTasksByProject(arg1:number):Promise<Array<models.Task>>;
+
+export function GetTasksBySource(arg1:string,arg2:number):Promise<Array<models.Task>>;
+
 export function GetTemplate(arg1:number):Promise<main.ProjectTemplate>;
 
 export function GetTemplates():Promise<Array<main.ProjectTemplate>>;
@@ -87,6 +99,8 @@ export function SearchNotes(arg1:string):Promise<Array<models.NoteWithProject>>;
 
 export function SearchProjects(arg1:string):Promise<Array<models.ProjectWithStats>>;
 
+export function SearchTasks(arg1:string):Promise<Array<models.TaskWithContext>>;
+
 export function ToggleProjectActive(arg1:number):Promise<models.ProjectWithStats>;
 
 export function UpdateActualHours(arg1:models.UpdateActualHoursInput):Promise<models.WeeklyEntryWithStatus>;
@@ -100,3 +114,7 @@ export function UpdateMeeting(arg1:models.UpdateMeetingInput):Promise<models.Mee
 export function UpdateNote(arg1:models.UpdateNoteInput):Promise<models.Note>;
 
 export function UpdateProject(arg1:models.UpdateProjectInput):Promise<models.ProjectWithStats>;
+
+export function UpdateTask(arg1:models.UpdateTaskInput):Promise<models.Task>;
+
+export function UpdateTaskStatus(arg1:number,arg2:string):Promise<models.Task>;

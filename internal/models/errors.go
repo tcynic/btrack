@@ -20,4 +20,9 @@ var (
 	ErrNoteNotFound    = errors.New("note not found")
 	ErrGoalNotFound    = errors.New("goal not found")
 	ErrInvalidStatus   = errors.New("invalid status value")
+
+	// Task errors
+	ErrTaskNotFound        = errors.New("task not found")
+	ErrInvalidPriority     = errors.New("invalid priority value")
+	ErrInvalidSourceType   = errors.New("invalid source type")
 )

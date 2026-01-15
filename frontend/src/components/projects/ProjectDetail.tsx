@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Card, CardHeader } from "../ui";
 import { WeeklyBreakdown } from "../weekly";
 import { MeetingList } from "../meetings";
 import { NoteList } from "../notes";
 import { GoalList } from "../goals";
+import { TaskList, TaskModal } from "../tasks";
 import { ProjectEditModal } from "./ProjectEditModal";
 import { useProjects } from "../../hooks";
 import { formatDate } from "../../utils";
 import { downloadCSV, generateExportFilename } from "../../utils/export";
-import { ExportProjectSummary } from "../../../wailsjs/go/main/App";
-import type { ProjectWithStats, UpdateProjectInput } from "../../types";
+import { ExportProjectSummary, GetTasksByProject, CreateTask, UpdateTask, DeleteTask, UpdateTaskStatus } from "../../../wailsjs/go/main/App";
+import type { ProjectWithStats, UpdateProjectInput, Task, CreateTaskInput, UpdateTaskInput } from "../../types";
 
 interface ProjectDetailProps {
   project: ProjectWithStats;
@@ -19,8 +20,24 @@ interface ProjectDetailProps {
 export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const { updateProject, getProject } = useProjects();
   const [currentProject, setCurrentProject] = useState(project);
+
+  const loadTasks = async () => {
+    try {
+      const projectTasks = await GetTasksByProject(currentProject.id);
+      setTasks(projectTasks);
+    } catch (err) {
+      console.error('Failed to load tasks:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadTasks();
+  }, [currentProject.id]);
 
   const handleEditSubmit = async (input: UpdateProjectInput) => {
     await updateProject(input);
@@ -43,6 +60,38 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleAddTask = () => {
+    setSelectedTask(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSubmitTask = async (input: CreateTaskInput | UpdateTaskInput) => {
+    if ('id' in input) {
+      await UpdateTask(input);
+    } else {
+      await CreateTask(input);
+    }
+    await loadTasks();
+    setIsTaskModalOpen(false);
+  };
+
+  const handleDeleteTask = async (id: number) => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      await DeleteTask(id);
+      await loadTasks();
+    }
+  };
+
+  const handleStatusChange = async (id: number, status: string) => {
+    await UpdateTaskStatus(id, status);
+    await loadTasks();
   };
   const progressPercent =
     currentProject.totalPlannedHours > 0
@@ -248,6 +297,24 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
         <GoalList projectId={currentProject.id} />
       </div>
 
+      {/* Tasks */}
+      <Card className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <CardHeader
+            title="Tasks"
+            subtitle="Action items and to-dos for this project"
+          />
+          <Button onClick={handleAddTask}>Add Task</Button>
+        </div>
+        <TaskList
+          tasks={tasks}
+          onEdit={handleEditTask}
+          onDelete={handleDeleteTask}
+          onStatusChange={handleStatusChange}
+          emptyMessage="No tasks for this project"
+        />
+      </Card>
+
       {/* Notes & Meetings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <NoteList projectId={currentProject.id} />
@@ -276,6 +343,17 @@ export function ProjectDetail({ project, onBack }: ProjectDetailProps) {
         onSubmit={handleEditSubmit}
         project={currentProject}
       />
+
+      {/* Task Modal */}
+      {isTaskModalOpen && (
+        <TaskModal
+          isOpen={isTaskModalOpen}
+          onClose={() => setIsTaskModalOpen(false)}
+          onSubmit={handleSubmitTask}
+          projectId={currentProject.id}
+          task={selectedTask}
+        />
+      )}
     </div>
   );
 }

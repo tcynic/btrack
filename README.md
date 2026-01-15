@@ -15,10 +15,18 @@ A desktop application for tracking project bandwidth allocation across weeks. Bu
 - **Meetings**: Schedule and track project meetings with attendees, duration, and notes
 - **Notes**: Create markdown-formatted notes for each project
 - **Goals**: Set and track project goals with status management (pending/in progress/completed/cancelled) and completion rate tracking
+- **Tasks**: Create and manage action items linked to meetings, notes, or as standalone tasks with priority and status tracking
 - **Templates**: Save projects as reusable templates for quick project creation with predefined hour allocations
 
+### Task Management
+- **Aggregated Task View**: View all tasks across projects in a single, filterable list
+- **Linked Tasks**: Create tasks from meetings or notes to track action items in context
+- **Status Tracking**: Quick status updates (pending → in progress → completed) via clickable badges
+- **Priority Levels**: Organize tasks by low, medium, or high priority
+- **Filtering**: Filter tasks by status, project, or due date to focus on what matters
+
 ### Data Management
-- **Search**: Full-text search across projects, meetings, notes, and goals
+- **Search**: Full-text search across projects, meetings, notes, goals, and tasks
 - **Backup & Restore**: Create backups and restore from previous database states with safety mechanisms
 - **Export**: Export data to CSV format (weekly reports, project summaries, or all projects)
 
@@ -81,6 +89,7 @@ npm run build        # Build frontend assets
 ├── meeting.go              # Meeting management and search
 ├── note.go                 # Note management and search
 ├── goal.go                 # Goal management, statistics, and search
+├── task.go                 # Task management, filtering, and search
 ├── template.go             # Project template management
 ├── backup.go               # Database backup and restore
 ├── export.go               # CSV export functionality

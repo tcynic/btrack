@@ -129,6 +129,12 @@ func (a *App) UpdateNote(input models.UpdateNoteInput) (*models.Note, error) {
 
 // DeleteNote removes a note
 func (a *App) DeleteNote(id int64) error {
+	// First delete associated tasks
+	_, err := a.db.Exec(database.DeleteTasksBySource, "note", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete associated tasks: %w", err)
+	}
+
 	result, err := a.db.Exec(database.DeleteNote, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete note: %w", err)

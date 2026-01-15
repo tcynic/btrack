@@ -147,6 +147,12 @@ func (a *App) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meeting, e
 
 // DeleteMeeting removes a meeting
 func (a *App) DeleteMeeting(id int64) error {
+	// First delete associated tasks
+	_, err := a.db.Exec(database.DeleteTasksBySource, "meeting", id)
+	if err != nil {
+		return fmt.Errorf("failed to delete associated tasks: %w", err)
+	}
+
 	result, err := a.db.Exec(database.DeleteMeeting, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete meeting: %w", err)

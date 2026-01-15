@@ -30,6 +30,10 @@ export function CreateProjectFromTemplate(arg1) {
   return window['go']['main']['App']['CreateProjectFromTemplate'](arg1);
 }
 
+export function CreateTask(arg1) {
+  return window['go']['main']['App']['CreateTask'](arg1);
+}
+
 export function CreateTemplate(arg1, arg2) {
   return window['go']['main']['App']['CreateTemplate'](arg1, arg2);
 }
@@ -50,6 +54,10 @@ export function DeleteProject(arg1) {
   return window['go']['main']['App']['DeleteProject'](arg1);
 }
 
+export function DeleteTask(arg1) {
+  return window['go']['main']['App']['DeleteTask'](arg1);
+}
+
 export function DeleteTemplate(arg1) {
   return window['go']['main']['App']['DeleteTemplate'](arg1);
 }
@@ -68,6 +76,10 @@ export function ExportWeeklyReport(arg1, arg2) {
 
 export function GetAllProjects(arg1) {
   return window['go']['main']['App']['GetAllProjects'](arg1);
+}
+
+export function GetAllTasks(arg1, arg2) {
+  return window['go']['main']['App']['GetAllTasks'](arg1, arg2);
 }
 
 export function GetBackupInfo() {
@@ -130,6 +142,18 @@ export function GetProject(arg1) {
   return window['go']['main']['App']['GetProject'](arg1);
 }
 
+export function GetTask(arg1) {
+  return window['go']['main']['App']['GetTask'](arg1);
+}
+
+export function GetTasksByProject(arg1) {
+  return window['go']['main']['App']['GetTasksByProject'](arg1);
+}
+
+export function GetTasksBySource(arg1, arg2) {
+  return window['go']['main']['App']['GetTasksBySource'](arg1, arg2);
+}
+
 export function GetTemplate(arg1) {
   return window['go']['main']['App']['GetTemplate'](arg1);
 }
@@ -170,6 +194,10 @@ export function SearchProjects(arg1) {
   return window['go']['main']['App']['SearchProjects'](arg1);
 }
 
+export function SearchTasks(arg1) {
+  return window['go']['main']['App']['SearchTasks'](arg1);
+}
+
 export function ToggleProjectActive(arg1) {
   return window['go']['main']['App']['ToggleProjectActive'](arg1);
 }
@@ -196,4 +224,12 @@ export function UpdateNote(arg1) {
 
 export function UpdateProject(arg1) {
   return window['go']['main']['App']['UpdateProject'](arg1);
+}
+
+export function UpdateTask(arg1) {
+  return window['go']['main']['App']['UpdateTask'](arg1);
+}
+
+export function UpdateTaskStatus(arg1, arg2) {
+  return window['go']['main']['App']['UpdateTaskStatus'](arg1, arg2);
 }

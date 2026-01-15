@@ -377,3 +377,97 @@ const (
 		DELETE FROM project_templates WHERE id = ?
 	`
 )
+
+// Task queries
+const (
+	InsertTask = `
+		INSERT INTO tasks (project_id, source_type, source_id, title, description, status, priority, due_date)
+		VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+	`
+
+	SelectTaskByID = `
+		SELECT id, project_id, source_type, source_id, title, description, status, priority, due_date, created_at, updated_at
+		FROM tasks
+		WHERE id = ?
+	`
+
+	SelectTasksByProject = `
+		SELECT id, project_id, source_type, source_id, title, description, status, priority, due_date, created_at, updated_at
+		FROM tasks
+		WHERE project_id = ?
+		ORDER BY CASE status
+			WHEN 'in_progress' THEN 1
+			WHEN 'pending' THEN 2
+			WHEN 'completed' THEN 3
+			WHEN 'cancelled' THEN 4
+		END, priority DESC, due_date ASC
+	`
+
+	SelectTasksBySource = `
+		SELECT id, project_id, source_type, source_id, title, description, status, priority, due_date, created_at, updated_at
+		FROM tasks
+		WHERE source_type = ? AND source_id = ?
+		ORDER BY created_at DESC
+	`
+
+	SelectAllTasks = `
+		SELECT t.id, t.project_id, t.source_type, t.source_id, t.title, t.description, t.status, t.priority, t.due_date,
+		       t.created_at, t.updated_at, p.name as project_name,
+		       COALESCE(m.title, n.title, '') as source_title
+		FROM tasks t
+		INNER JOIN projects p ON t.project_id = p.id
+		LEFT JOIN project_meetings m ON t.source_type = 'meeting' AND t.source_id = m.id
+		LEFT JOIN project_notes n ON t.source_type = 'note' AND t.source_id = n.id
+		WHERE p.is_active = 1
+		ORDER BY CASE t.status
+			WHEN 'in_progress' THEN 1
+			WHEN 'pending' THEN 2
+			WHEN 'completed' THEN 3
+			WHEN 'cancelled' THEN 4
+		END, t.priority DESC, t.due_date ASC
+	`
+
+	SelectAllTasksFiltered = `
+		SELECT t.id, t.project_id, t.source_type, t.source_id, t.title, t.description, t.status, t.priority, t.due_date,
+		       t.created_at, t.updated_at, p.name as project_name,
+		       COALESCE(m.title, n.title, '') as source_title
+		FROM tasks t
+		INNER JOIN projects p ON t.project_id = p.id
+		LEFT JOIN project_meetings m ON t.source_type = 'meeting' AND t.source_id = m.id
+		LEFT JOIN project_notes n ON t.source_type = 'note' AND t.source_id = n.id
+		WHERE p.is_active = 1
+	`
+
+	UpdateTask = `
+		UPDATE tasks
+		SET title = ?, description = ?, status = ?, priority = ?, due_date = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`
+
+	UpdateTaskStatus = `
+		UPDATE tasks
+		SET status = ?, updated_at = datetime('now')
+		WHERE id = ?
+	`
+
+	DeleteTask = `
+		DELETE FROM tasks WHERE id = ?
+	`
+
+	DeleteTasksBySource = `
+		DELETE FROM tasks WHERE source_type = ? AND source_id = ?
+	`
+
+	SearchTasks = `
+		SELECT t.id, t.project_id, t.source_type, t.source_id, t.title, t.description, t.status, t.priority, t.due_date,
+		       t.created_at, t.updated_at, p.name as project_name,
+		       COALESCE(m.title, n.title, '') as source_title
+		FROM tasks t
+		INNER JOIN projects p ON t.project_id = p.id
+		LEFT JOIN project_meetings m ON t.source_type = 'meeting' AND t.source_id = m.id
+		LEFT JOIN project_notes n ON t.source_type = 'note' AND t.source_id = n.id
+		WHERE (t.title LIKE '%' || ? || '%' OR t.description LIKE '%' || ? || '%')
+		ORDER BY t.created_at DESC
+		LIMIT 50
+	`
+)

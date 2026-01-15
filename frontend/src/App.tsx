@@ -4,6 +4,7 @@ import { Layout } from "./components/layout";
 import { Dashboard } from "./components/dashboard";
 import { WeekView } from "./components/week";
 import { ProjectList, ProjectDetail } from "./components/projects";
+import { TasksView } from "./components/tasks";
 import { ReportsView } from "./components/reports";
 import { SettingsView } from "./components/settings";
 import { KeyboardShortcutsModal } from "./components/ui";
@@ -12,7 +13,7 @@ import { useTheme } from "./hooks/useTheme";
 import type { ProjectWithStats } from "./types";
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "week" | "projects" | "reports" | "settings">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "week" | "projects" | "tasks" | "reports" | "settings">(
     "dashboard",
   );
   const [selectedProject, setSelectedProject] =
@@ -40,6 +41,8 @@ function AppContent() {
           <Dashboard />
         ) : activeTab === "week" ? (
           <WeekView />
+        ) : activeTab === "tasks" ? (
+          <TasksView />
         ) : activeTab === "reports" ? (
           <ReportsView />
         ) : activeTab === "settings" ? (
