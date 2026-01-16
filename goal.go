@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"btrack/internal/database"
 	"btrack/internal/models"
@@ -42,73 +41,24 @@ func (a *App) GetGoals(projectID int64) ([]models.Goal, error) {
 
 	var goals []models.Goal
 	for rows.Next() {
-		var g models.Goal
-		var description, targetDate *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&g.ID,
-			&g.ProjectID,
-			&g.Title,
-			&description,
-			&g.Status,
-			&targetDate,
-			&createdAt,
-			&updatedAt,
-		)
+		g, err := models.ScanGoal(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan goal: %w", err)
 		}
-
-		if description != nil {
-			g.Description = *description
-		}
-		if targetDate != nil {
-			g.TargetDate = *targetDate
-		}
-		g.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		g.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		goals = append(goals, g)
+		goals = append(goals, *g)
 	}
 
-	if goals == nil {
-		goals = []models.Goal{}
-	}
-
-	return goals, nil
+	return database.EnsureSlice(goals), nil
 }
 
 // GetGoal returns a single goal by ID
 func (a *App) GetGoal(id int64) (*models.Goal, error) {
-	var g models.Goal
-	var description, targetDate *string
-	var createdAt, updatedAt string
-
-	err := a.db.QueryRow(database.SelectGoalByID, id).Scan(
-		&g.ID,
-		&g.ProjectID,
-		&g.Title,
-		&description,
-		&g.Status,
-		&targetDate,
-		&createdAt,
-		&updatedAt,
-	)
+	row := a.db.QueryRow(database.SelectGoalByID, id)
+	g, err := models.ScanGoal(row.Scan)
 	if err != nil {
 		return nil, models.ErrGoalNotFound
 	}
-
-	if description != nil {
-		g.Description = *description
-	}
-	if targetDate != nil {
-		g.TargetDate = *targetDate
-	}
-	g.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	g.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-	return &g, nil
+	return g, nil
 }
 
 // UpdateGoal updates an existing goal
@@ -244,40 +194,12 @@ func (a *App) SearchGoals(query string) ([]models.GoalWithProject, error) {
 
 	var goals []models.GoalWithProject
 	for rows.Next() {
-		var g models.GoalWithProject
-		var description, targetDate *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&g.ID,
-			&g.ProjectID,
-			&g.Title,
-			&description,
-			&g.Status,
-			&targetDate,
-			&createdAt,
-			&updatedAt,
-			&g.ProjectName,
-		)
+		g, err := models.ScanGoalWithProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan goal: %w", err)
 		}
-
-		if description != nil {
-			g.Description = *description
-		}
-		if targetDate != nil {
-			g.TargetDate = *targetDate
-		}
-		g.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		g.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		goals = append(goals, g)
+		goals = append(goals, *g)
 	}
 
-	if goals == nil {
-		goals = []models.GoalWithProject{}
-	}
-
-	return goals, nil
+	return database.EnsureSlice(goals), nil
 }

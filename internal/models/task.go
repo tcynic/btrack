@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"btrack/internal/database"
+)
 
 // Task status constants
 const (
@@ -44,6 +48,77 @@ type TaskWithContext struct {
 	Task
 	ProjectName string `json:"projectName"`
 	SourceTitle string `json:"sourceTitle"`
+}
+
+// ScanTask scans a database row into a Task struct.
+// Expected columns: id, project_id, source_type, source_id, title, description, status, priority, due_date, created_at, updated_at
+func ScanTask(scan func(dest ...any) error) (*Task, error) {
+	var t Task
+	var sourceID *int64
+	var description, dueDate *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&t.ID,
+		&t.ProjectID,
+		&t.SourceType,
+		&sourceID,
+		&t.Title,
+		&description,
+		&t.Status,
+		&t.Priority,
+		&dueDate,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	t.SourceID = sourceID
+	t.Description = database.NullableString(description)
+	t.DueDate = database.NullableString(dueDate)
+	t.CreatedAt = database.ParseTimestamp(createdAt)
+	t.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &t, nil
+}
+
+// ScanTaskWithContext scans a database row into a TaskWithContext struct.
+// Expected columns: id, project_id, source_type, source_id, title, description, status, priority, due_date, created_at, updated_at, project_name, source_title
+func ScanTaskWithContext(scan func(dest ...any) error) (*TaskWithContext, error) {
+	var t TaskWithContext
+	var sourceID *int64
+	var description, dueDate, sourceTitle *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&t.ID,
+		&t.ProjectID,
+		&t.SourceType,
+		&sourceID,
+		&t.Title,
+		&description,
+		&t.Status,
+		&t.Priority,
+		&dueDate,
+		&createdAt,
+		&updatedAt,
+		&t.ProjectName,
+		&sourceTitle,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	t.SourceID = sourceID
+	t.Description = database.NullableString(description)
+	t.DueDate = database.NullableString(dueDate)
+	t.SourceTitle = database.NullableString(sourceTitle)
+	t.CreatedAt = database.ParseTimestamp(createdAt)
+	t.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &t, nil
 }
 
 // CreateTaskInput is the input for creating a new task

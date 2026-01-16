@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"btrack/internal/database"
 	"btrack/internal/models"
@@ -44,75 +43,24 @@ func (a *App) GetMeetings(projectID int64) ([]models.Meeting, error) {
 
 	var meetings []models.Meeting
 	for rows.Next() {
-		var m models.Meeting
-		var attendees, notes *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&m.ID,
-			&m.ProjectID,
-			&m.Title,
-			&m.MeetingDate,
-			&m.DurationMinutes,
-			&attendees,
-			&notes,
-			&createdAt,
-			&updatedAt,
-		)
+		m, err := models.ScanMeeting(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan meeting: %w", err)
 		}
-
-		if attendees != nil {
-			m.Attendees = *attendees
-		}
-		if notes != nil {
-			m.Notes = *notes
-		}
-		m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		m.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		meetings = append(meetings, m)
+		meetings = append(meetings, *m)
 	}
 
-	if meetings == nil {
-		meetings = []models.Meeting{}
-	}
-
-	return meetings, nil
+	return database.EnsureSlice(meetings), nil
 }
 
 // GetMeeting returns a single meeting by ID
 func (a *App) GetMeeting(id int64) (*models.Meeting, error) {
-	var m models.Meeting
-	var attendees, notes *string
-	var createdAt, updatedAt string
-
-	err := a.db.QueryRow(database.SelectMeetingByID, id).Scan(
-		&m.ID,
-		&m.ProjectID,
-		&m.Title,
-		&m.MeetingDate,
-		&m.DurationMinutes,
-		&attendees,
-		&notes,
-		&createdAt,
-		&updatedAt,
-	)
+	row := a.db.QueryRow(database.SelectMeetingByID, id)
+	m, err := models.ScanMeeting(row.Scan)
 	if err != nil {
 		return nil, models.ErrMeetingNotFound
 	}
-
-	if attendees != nil {
-		m.Attendees = *attendees
-	}
-	if notes != nil {
-		m.Notes = *notes
-	}
-	m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	m.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-	return &m, nil
+	return m, nil
 }
 
 // UpdateMeeting updates an existing meeting
@@ -180,49 +128,20 @@ func (a *App) GetMeetingsByDate(date string) ([]models.MeetingWithProject, error
 
 	var meetings []models.MeetingWithProject
 	for rows.Next() {
-		var m models.MeetingWithProject
-		var attendees, notes *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&m.ID,
-			&m.ProjectID,
-			&m.Title,
-			&m.MeetingDate,
-			&m.DurationMinutes,
-			&attendees,
-			&notes,
-			&createdAt,
-			&updatedAt,
-			&m.ProjectName,
-		)
+		m, err := models.ScanMeetingWithProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan meeting: %w", err)
 		}
-
-		if attendees != nil {
-			m.Attendees = *attendees
-		}
-		if notes != nil {
-			m.Notes = *notes
-		}
-		m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		m.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		meetings = append(meetings, m)
+		meetings = append(meetings, *m)
 	}
 
-	if meetings == nil {
-		meetings = []models.MeetingWithProject{}
-	}
-
-	return meetings, nil
+	return database.EnsureSlice(meetings), nil
 }
 
 // GetMeetingsByWeek returns all meetings for a week (7-day period starting from weekStartDate)
 func (a *App) GetMeetingsByWeek(weekStartDate string) ([]models.MeetingWithProject, error) {
 	// Calculate the end date (7 days after start)
-	startDate, err := time.Parse("2006-01-02", weekStartDate)
+	startDate, err := database.ParseDate(weekStartDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid week start date: %w", err)
 	}
@@ -236,43 +155,14 @@ func (a *App) GetMeetingsByWeek(weekStartDate string) ([]models.MeetingWithProje
 
 	var meetings []models.MeetingWithProject
 	for rows.Next() {
-		var m models.MeetingWithProject
-		var attendees, notes *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&m.ID,
-			&m.ProjectID,
-			&m.Title,
-			&m.MeetingDate,
-			&m.DurationMinutes,
-			&attendees,
-			&notes,
-			&createdAt,
-			&updatedAt,
-			&m.ProjectName,
-		)
+		m, err := models.ScanMeetingWithProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan meeting: %w", err)
 		}
-
-		if attendees != nil {
-			m.Attendees = *attendees
-		}
-		if notes != nil {
-			m.Notes = *notes
-		}
-		m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		m.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		meetings = append(meetings, m)
+		meetings = append(meetings, *m)
 	}
 
-	if meetings == nil {
-		meetings = []models.MeetingWithProject{}
-	}
-
-	return meetings, nil
+	return database.EnsureSlice(meetings), nil
 }
 
 // SearchMeetings searches for meetings by title, notes, or attendees
@@ -285,41 +175,12 @@ func (a *App) SearchMeetings(query string) ([]models.MeetingWithProject, error) 
 
 	var meetings []models.MeetingWithProject
 	for rows.Next() {
-		var m models.MeetingWithProject
-		var attendees, notes *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&m.ID,
-			&m.ProjectID,
-			&m.Title,
-			&m.MeetingDate,
-			&m.DurationMinutes,
-			&attendees,
-			&notes,
-			&m.CreatedAt,
-			&m.UpdatedAt,
-			&m.ProjectName,
-		)
+		m, err := models.ScanMeetingWithProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan meeting: %w", err)
 		}
-
-		if attendees != nil {
-			m.Attendees = *attendees
-		}
-		if notes != nil {
-			m.Notes = *notes
-		}
-		m.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		m.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		meetings = append(meetings, m)
+		meetings = append(meetings, *m)
 	}
 
-	if meetings == nil {
-		meetings = []models.MeetingWithProject{}
-	}
-
-	return meetings, nil
+	return database.EnsureSlice(meetings), nil
 }

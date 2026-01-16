@@ -1,13 +1,7 @@
 package models
 
-// NoteWithProject includes the parent project name
-type NoteWithProject struct {
-	Note
-	ProjectName string `json:"projectName"`
-}
-
-// GoalWithProject includes the parent project name
-type GoalWithProject struct {
-	Goal
-	ProjectName string `json:"projectName"`
-}
+// Search result types are defined in their respective model files:
+// - NoteWithProject in note.go
+// - GoalWithProject in goal.go
+// - TaskWithContext in task.go
+// - MeetingWithProject in meeting.go

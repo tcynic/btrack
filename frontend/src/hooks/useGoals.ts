@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { Goal, GoalStatus, CreateGoalInput, UpdateGoalInput } from '../types'
 import {
   CreateGoal,
@@ -7,92 +7,46 @@ import {
   UpdateGoalStatus,
   DeleteGoal,
 } from '../../wailsjs/go/main/App'
+import { useCrud } from './useCrud'
 
 export function useGoals(projectId: number) {
-  const [goals, setGoals] = useState<Goal[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const config = useMemo(() => ({
+    loadFn: () => GetGoals(projectId) as Promise<Goal[]>,
+    createFn: (input: CreateGoalInput) => CreateGoal(input) as Promise<Goal>,
+    updateFn: (input: UpdateGoalInput) => UpdateGoal(input) as Promise<Goal>,
+    deleteFn: DeleteGoal,
+    getId: (g: Goal) => g.id,
+  }), [projectId])
 
-  const loadGoals = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await GetGoals(projectId)
-      setGoals(data as Goal[])
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [projectId])
+  const crud = useCrud<Goal, CreateGoalInput, UpdateGoalInput>(config)
+  const [statusLoading, setStatusLoading] = useState(false)
 
-  const createGoal = useCallback(async (input: CreateGoalInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const goal = await CreateGoal(input)
-      setGoals((prev) => [goal as Goal, ...prev])
-      return goal as Goal
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  // Alias for backward compatibility
+  const loadGoals = useCallback(() => crud.load(), [crud.load])
+  const createGoal = useCallback((input: CreateGoalInput) => crud.create(input), [crud.create])
+  const updateGoal = useCallback((input: UpdateGoalInput) => crud.update(input), [crud.update])
+  const deleteGoal = useCallback((id: number) => crud.remove(id), [crud.remove])
 
-  const updateGoal = useCallback(async (input: UpdateGoalInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const goal = await UpdateGoal(input)
-      setGoals((prev) =>
-        prev.map((g) => (g.id === input.id ? (goal as Goal) : g))
-      )
-      return goal as Goal
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
+  // Status update is a special case not covered by generic CRUD
   const updateGoalStatus = useCallback(async (id: number, status: GoalStatus) => {
-    setIsLoading(true)
-    setError(null)
+    setStatusLoading(true)
     try {
       const goal = await UpdateGoalStatus(id, status)
-      setGoals((prev) =>
+      crud.setItems((prev) =>
         prev.map((g) => (g.id === id ? (goal as Goal) : g))
       )
       return goal as Goal
     } catch (err) {
-      setError(String(err))
       throw err
     } finally {
-      setIsLoading(false)
+      setStatusLoading(false)
     }
-  }, [])
-
-  const deleteGoal = useCallback(async (id: number) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      await DeleteGoal(id)
-      setGoals((prev) => prev.filter((g) => g.id !== id))
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  }, [crud.setItems])
 
   return {
-    goals,
-    isLoading,
-    error,
+    goals: crud.items,
+    isLoading: crud.isLoading || statusLoading,
+    error: crud.error,
     loadGoals,
     createGoal,
     updateGoal,

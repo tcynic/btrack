@@ -4,32 +4,52 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-btrack (Bandwidth Tracker) is a desktop application for tracking project bandwidth allocation across weeks. It's built with Wails v2, combining a Go backend with a React/TypeScript frontend, and uses SQLite for local data persistence.
+btrack (Bandwidth Tracker) is a desktop application for tracking project bandwidth allocation across weeks. Built with Wails v2, combining a Go backend with a React/TypeScript frontend, and uses SQLite for local data persistence.
 
 **Core Functionality**: Track "My Hours" (TotalSoldHours - SpecialistHours) across weekly entries using a frontloaded distribution algorithm. Users can plan project timelines, view dashboard aggregations, and update actual hours for past weeks.
+
+## Prerequisites
+
+- Go 1.24+
+- Node.js/npm
+- Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
 
 ## Key Commands
 
 ### Development
 ```bash
-wails dev                    # Live development with hot reload
+wails dev                    # Live development with hot reload (both backend and frontend)
 cd frontend && npm install   # Install frontend dependencies
 cd frontend && npm run dev   # Run Vite dev server independently
+cd frontend && npm run build # Build frontend assets only
 ```
+
+**Note**: During `wails dev`, the frontend is accessible at the dev server URL, and Go methods are available at http://localhost:34115 for browser-based development.
 
 ### Building
 ```bash
-wails build                  # Build production binary
-cd frontend && npm run build # Build frontend assets only
+wails build                  # Build production binary for current platform
 ```
+
+Creates a native application binary with embedded frontend assets.
+
+### Database Management
+```bash
+# Reset database during development (macOS)
+rm ~/Library/Application\ Support/btrack/btrack.db
+# Database will be recreated with fresh schema on next run
+```
+
+**Database Location**: `~/Library/Application Support/btrack/btrack.db` (macOS)
 
 ## Architecture
 
 ### Backend Structure (Go)
 
 **Entry Point & Lifecycle**:
-- **main.go**: Configures Wails app (1280x800 window), embeds `frontend/dist` assets, binds App instance
-- **app.go**: Main App struct with database connection; `startup()` initializes SQLite, `shutdown()` closes DB
+- **main.go**: Configures Wails app (1280x800 window), embeds `frontend/dist` assets via `//go:embed all:frontend/dist`, binds App instance to frontend
+- **app.go**: Main App struct with database connection; `startup(ctx)` receives runtime context and initializes SQLite, `shutdown(ctx)` closes DB
+- **Binding**: All public (capitalized) methods on App struct are automatically callable from JavaScript/TypeScript frontend
 
 **Domain Logic** (all methods exposed to frontend via Wails bindings):
 - **project.go**: CRUD operations for projects with automatic weekly entry generation/recalculation
@@ -154,6 +174,54 @@ cd frontend && npm run build # Build frontend assets only
 - Priority values: low, medium, high
 - Foreign key cascade deletes
 
+## Code Patterns
+
+### Backend (Go)
+
+**Database Scanning**: Entity models include `Scan` functions that encapsulate row scanning logic:
+```go
+// ScanMeeting scans a database row into a Meeting struct
+meeting, err := models.ScanMeeting(rows.Scan)
+```
+
+**Slice Helpers**: Use `database.EnsureSlice()` to prevent nil JSON responses:
+```go
+return database.EnsureSlice(meetings), nil
+```
+
+**Timestamp Parsing**: Use `database.ParseTimestamp()` for consistent timestamp handling:
+```go
+m.CreatedAt = database.ParseTimestamp(createdAt)
+```
+
+### Frontend (React/TypeScript)
+
+**CRUD Hooks**: Use the `useCrud` factory for consistent async state management:
+```typescript
+const config = useMemo(() => ({
+  loadFn: () => GetMeetings(projectId),
+  createFn: CreateMeeting,
+  updateFn: UpdateMeeting,
+  deleteFn: DeleteMeeting,
+  getId: (m: Meeting) => m.id,
+}), [projectId])
+
+const crud = useCrud<Meeting, CreateMeetingInput, UpdateMeetingInput>(config)
+```
+
+**Entity Lists**: Use `EntityList` component for consistent list rendering:
+```typescript
+<EntityList
+  title="Meetings"
+  items={meetings}
+  isLoading={isLoading}
+  emptyMessage="No meetings yet."
+  addButtonLabel="Add Meeting"
+  onAdd={() => setIsModalOpen(true)}
+  renderItem={renderMeetingItem}
+/>
+```
+
 ## Development Workflow
 
 ### Adding Backend Methods
@@ -161,6 +229,20 @@ cd frontend && npm run build # Build frontend assets only
 2. Methods must be exported (capitalized) to be accessible from frontend
 3. Run `wails dev` to regenerate bindings in `frontend/wailsjs/`
 4. Import from `frontend/wailsjs/go/main/App` in React components
+
+Example:
+```go
+// In app.go or domain file
+func (a *App) MyNewMethod(param string) string {
+    return "result: " + param
+}
+```
+
+```typescript
+// In React component
+import {MyNewMethod} from '../wailsjs/go/main/App'
+MyNewMethod("test").then(result => console.log(result))
+```
 
 ### Database Changes
 1. Modify schema in `internal/database/migrations.go`

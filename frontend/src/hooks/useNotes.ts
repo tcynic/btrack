@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { Note, CreateNoteInput, UpdateNoteInput } from '../types'
 import {
   CreateNote,
@@ -6,75 +6,29 @@ import {
   UpdateNote,
   DeleteNote,
 } from '../../wailsjs/go/main/App'
+import { useCrud } from './useCrud'
 
 export function useNotes(projectId: number) {
-  const [notes, setNotes] = useState<Note[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const config = useMemo(() => ({
+    loadFn: () => GetNotes(projectId) as Promise<Note[]>,
+    createFn: (input: CreateNoteInput) => CreateNote(input) as Promise<Note>,
+    updateFn: (input: UpdateNoteInput) => UpdateNote(input) as Promise<Note>,
+    deleteFn: DeleteNote,
+    getId: (n: Note) => n.id,
+  }), [projectId])
 
-  const loadNotes = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await GetNotes(projectId)
-      setNotes(data as Note[])
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [projectId])
+  const crud = useCrud<Note, CreateNoteInput, UpdateNoteInput>(config)
 
-  const createNote = useCallback(async (input: CreateNoteInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const note = await CreateNote(input)
-      setNotes((prev) => [note as Note, ...prev])
-      return note as Note
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  const updateNote = useCallback(async (input: UpdateNoteInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const note = await UpdateNote(input)
-      setNotes((prev) =>
-        prev.map((n) => (n.id === input.id ? (note as Note) : n))
-      )
-      return note as Note
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  const deleteNote = useCallback(async (id: number) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      await DeleteNote(id)
-      setNotes((prev) => prev.filter((n) => n.id !== id))
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  // Alias for backward compatibility
+  const loadNotes = useCallback(() => crud.load(), [crud.load])
+  const createNote = useCallback((input: CreateNoteInput) => crud.create(input), [crud.create])
+  const updateNote = useCallback((input: UpdateNoteInput) => crud.update(input), [crud.update])
+  const deleteNote = useCallback((id: number) => crud.remove(id), [crud.remove])
 
   return {
-    notes,
-    isLoading,
-    error,
+    notes: crud.items,
+    isLoading: crud.isLoading,
+    error: crud.error,
     loadNotes,
     createNote,
     updateNote,

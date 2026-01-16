@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"btrack/internal/database"
+)
 
 // Meeting represents a project meeting
 type Meeting struct {
@@ -13,6 +17,67 @@ type Meeting struct {
 	Notes           string    `json:"notes"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+// ScanMeeting scans a database row into a Meeting struct.
+// Expected columns: id, project_id, title, meeting_date, duration_minutes, attendees, notes, created_at, updated_at
+func ScanMeeting(scan func(dest ...any) error) (*Meeting, error) {
+	var m Meeting
+	var attendees, notes *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&m.ID,
+		&m.ProjectID,
+		&m.Title,
+		&m.MeetingDate,
+		&m.DurationMinutes,
+		&attendees,
+		&notes,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	m.Attendees = database.NullableString(attendees)
+	m.Notes = database.NullableString(notes)
+	m.CreatedAt = database.ParseTimestamp(createdAt)
+	m.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &m, nil
+}
+
+// ScanMeetingWithProject scans a database row into a MeetingWithProject struct.
+// Expected columns: id, project_id, title, meeting_date, duration_minutes, attendees, notes, created_at, updated_at, project_name
+func ScanMeetingWithProject(scan func(dest ...any) error) (*MeetingWithProject, error) {
+	var m MeetingWithProject
+	var attendees, notes *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&m.ID,
+		&m.ProjectID,
+		&m.Title,
+		&m.MeetingDate,
+		&m.DurationMinutes,
+		&attendees,
+		&notes,
+		&createdAt,
+		&updatedAt,
+		&m.ProjectName,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	m.Attendees = database.NullableString(attendees)
+	m.Notes = database.NullableString(notes)
+	m.CreatedAt = database.ParseTimestamp(createdAt)
+	m.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &m, nil
 }
 
 // MeetingWithProject extends Meeting with project name for cross-project queries

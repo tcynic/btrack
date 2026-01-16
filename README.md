@@ -95,16 +95,77 @@ npm run build        # Build frontend assets
 ├── export.go               # CSV export functionality
 ├── reports.go              # Analytics and reporting
 ├── internal/
-│   ├── database/           # SQLite setup, migrations, queries
-│   └── models/             # Domain models and validation
+│   ├── database/
+│   │   ├── database.go     # SQLite connection setup
+│   │   ├── migrations.go   # Schema and seed data
+│   │   ├── queries.go      # SQL query constants
+│   │   └── scanner.go      # Scanning helpers (ParseTimestamp, EnsureSlice, etc.)
+│   └── models/             # Domain models with Scan methods and validation
 └── frontend/
     ├── src/
-    │   ├── components/     # React components
-    │   ├── hooks/          # Custom React hooks
+    │   ├── components/
+    │   │   ├── ui/         # Reusable UI components (Button, Modal, EntityList, etc.)
+    │   │   ├── meetings/   # Meeting-specific components
+    │   │   ├── notes/      # Note-specific components
+    │   │   ├── goals/      # Goal-specific components
+    │   │   ├── tasks/      # Task-specific components
+    │   │   └── ...         # Other feature components
+    │   ├── hooks/
+    │   │   ├── useCrud.ts  # Generic CRUD hook factory
+    │   │   ├── useMeetings.ts, useNotes.ts, useGoals.ts  # Entity-specific hooks
+    │   │   └── ...         # Other custom hooks
     │   ├── context/        # React context providers
     │   ├── types/          # TypeScript definitions
     │   └── utils/          # Utility functions
     └── wailsjs/            # Auto-generated Wails bindings (DO NOT EDIT)
+```
+
+## Code Patterns
+
+### Backend (Go)
+
+**Database Scanning**: Entity models include `Scan` functions that encapsulate row scanning logic:
+```go
+// ScanMeeting scans a database row into a Meeting struct
+meeting, err := models.ScanMeeting(rows.Scan)
+```
+
+**Slice Helpers**: Use `database.EnsureSlice()` to prevent nil JSON responses:
+```go
+return database.EnsureSlice(meetings), nil
+```
+
+**Timestamp Parsing**: Use `database.ParseTimestamp()` for consistent timestamp handling:
+```go
+m.CreatedAt = database.ParseTimestamp(createdAt)
+```
+
+### Frontend (React/TypeScript)
+
+**CRUD Hooks**: Use the `useCrud` factory for consistent async state management:
+```typescript
+const config = useMemo(() => ({
+  loadFn: () => GetMeetings(projectId),
+  createFn: CreateMeeting,
+  updateFn: UpdateMeeting,
+  deleteFn: DeleteMeeting,
+  getId: (m: Meeting) => m.id,
+}), [projectId])
+
+const crud = useCrud<Meeting, CreateMeetingInput, UpdateMeetingInput>(config)
+```
+
+**Entity Lists**: Use `EntityList` component for consistent list rendering:
+```typescript
+<EntityList
+  title="Meetings"
+  items={meetings}
+  isLoading={isLoading}
+  emptyMessage="No meetings yet."
+  addButtonLabel="Add Meeting"
+  onAdd={() => setIsModalOpen(true)}
+  renderItem={renderMeetingItem}
+/>
 ```
 
 ## Database

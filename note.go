@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 
 	"btrack/internal/database"
 	"btrack/internal/models"
@@ -41,63 +40,24 @@ func (a *App) GetNotes(projectID int64) ([]models.Note, error) {
 
 	var notes []models.Note
 	for rows.Next() {
-		var n models.Note
-		var content *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&n.ID,
-			&n.ProjectID,
-			&n.Title,
-			&content,
-			&createdAt,
-			&updatedAt,
-		)
+		n, err := models.ScanNote(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan note: %w", err)
 		}
-
-		if content != nil {
-			n.Content = *content
-		}
-		n.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		n.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		notes = append(notes, n)
+		notes = append(notes, *n)
 	}
 
-	if notes == nil {
-		notes = []models.Note{}
-	}
-
-	return notes, nil
+	return database.EnsureSlice(notes), nil
 }
 
 // GetNote returns a single note by ID
 func (a *App) GetNote(id int64) (*models.Note, error) {
-	var n models.Note
-	var content *string
-	var createdAt, updatedAt string
-
-	err := a.db.QueryRow(database.SelectNoteByID, id).Scan(
-		&n.ID,
-		&n.ProjectID,
-		&n.Title,
-		&content,
-		&createdAt,
-		&updatedAt,
-	)
+	row := a.db.QueryRow(database.SelectNoteByID, id)
+	n, err := models.ScanNote(row.Scan)
 	if err != nil {
 		return nil, models.ErrNoteNotFound
 	}
-
-	if content != nil {
-		n.Content = *content
-	}
-	n.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	n.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-	return &n, nil
+	return n, nil
 }
 
 // UpdateNote updates an existing note
@@ -162,35 +122,12 @@ func (a *App) SearchNotes(query string) ([]models.NoteWithProject, error) {
 
 	var notes []models.NoteWithProject
 	for rows.Next() {
-		var n models.NoteWithProject
-		var content *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&n.ID,
-			&n.ProjectID,
-			&n.Title,
-			&content,
-			&createdAt,
-			&updatedAt,
-			&n.ProjectName,
-		)
+		n, err := models.ScanNoteWithProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan note: %w", err)
 		}
-
-		if content != nil {
-			n.Content = *content
-		}
-		n.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		n.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		notes = append(notes, n)
+		notes = append(notes, *n)
 	}
 
-	if notes == nil {
-		notes = []models.NoteWithProject{}
-	}
-
-	return notes, nil
+	return database.EnsureSlice(notes), nil
 }

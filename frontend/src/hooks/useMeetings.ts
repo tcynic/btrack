@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { Meeting, CreateMeetingInput, UpdateMeetingInput } from '../types'
 import {
   CreateMeeting,
@@ -6,75 +6,29 @@ import {
   UpdateMeeting,
   DeleteMeeting,
 } from '../../wailsjs/go/main/App'
+import { useCrud } from './useCrud'
 
 export function useMeetings(projectId: number) {
-  const [meetings, setMeetings] = useState<Meeting[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const config = useMemo(() => ({
+    loadFn: () => GetMeetings(projectId) as Promise<Meeting[]>,
+    createFn: (input: CreateMeetingInput) => CreateMeeting(input) as Promise<Meeting>,
+    updateFn: (input: UpdateMeetingInput) => UpdateMeeting(input) as Promise<Meeting>,
+    deleteFn: DeleteMeeting,
+    getId: (m: Meeting) => m.id,
+  }), [projectId])
 
-  const loadMeetings = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await GetMeetings(projectId)
-      setMeetings(data as Meeting[])
-    } catch (err) {
-      setError(String(err))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [projectId])
+  const crud = useCrud<Meeting, CreateMeetingInput, UpdateMeetingInput>(config)
 
-  const createMeeting = useCallback(async (input: CreateMeetingInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const meeting = await CreateMeeting(input)
-      setMeetings((prev) => [meeting as Meeting, ...prev])
-      return meeting as Meeting
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  const updateMeeting = useCallback(async (input: UpdateMeetingInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const meeting = await UpdateMeeting(input)
-      setMeetings((prev) =>
-        prev.map((m) => (m.id === input.id ? (meeting as Meeting) : m))
-      )
-      return meeting as Meeting
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  const deleteMeeting = useCallback(async (id: number) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      await DeleteMeeting(id)
-      setMeetings((prev) => prev.filter((m) => m.id !== id))
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  // Alias for backward compatibility
+  const loadMeetings = useCallback(() => crud.load(), [crud.load])
+  const createMeeting = useCallback((input: CreateMeetingInput) => crud.create(input), [crud.create])
+  const updateMeeting = useCallback((input: UpdateMeetingInput) => crud.update(input), [crud.update])
+  const deleteMeeting = useCallback((id: number) => crud.remove(id), [crud.remove])
 
   return {
-    meetings,
-    isLoading,
-    error,
+    meetings: crud.items,
+    isLoading: crud.isLoading,
+    error: crud.error,
     loadMeetings,
     createMeeting,
     updateMeeting,

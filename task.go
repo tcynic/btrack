@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"btrack/internal/database"
 	"btrack/internal/models"
@@ -38,39 +37,12 @@ func (a *App) CreateTask(input models.CreateTaskInput) (*models.Task, error) {
 
 // GetTask returns a single task by ID
 func (a *App) GetTask(id int64) (*models.Task, error) {
-	var t models.Task
-	var sourceID *int64
-	var description, dueDate *string
-	var createdAt, updatedAt string
-
-	err := a.db.QueryRow(database.SelectTaskByID, id).Scan(
-		&t.ID,
-		&t.ProjectID,
-		&t.SourceType,
-		&sourceID,
-		&t.Title,
-		&description,
-		&t.Status,
-		&t.Priority,
-		&dueDate,
-		&createdAt,
-		&updatedAt,
-	)
+	row := a.db.QueryRow(database.SelectTaskByID, id)
+	t, err := models.ScanTask(row.Scan)
 	if err != nil {
 		return nil, models.ErrTaskNotFound
 	}
-
-	t.SourceID = sourceID
-	if description != nil {
-		t.Description = *description
-	}
-	if dueDate != nil {
-		t.DueDate = *dueDate
-	}
-	t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-	return &t, nil
+	return t, nil
 }
 
 // GetTasksByProject returns all tasks for a project
@@ -83,46 +55,14 @@ func (a *App) GetTasksByProject(projectID int64) ([]models.Task, error) {
 
 	var tasks []models.Task
 	for rows.Next() {
-		var t models.Task
-		var sourceID *int64
-		var description, dueDate *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&t.ID,
-			&t.ProjectID,
-			&t.SourceType,
-			&sourceID,
-			&t.Title,
-			&description,
-			&t.Status,
-			&t.Priority,
-			&dueDate,
-			&createdAt,
-			&updatedAt,
-		)
+		t, err := models.ScanTask(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %w", err)
 		}
-
-		t.SourceID = sourceID
-		if description != nil {
-			t.Description = *description
-		}
-		if dueDate != nil {
-			t.DueDate = *dueDate
-		}
-		t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		tasks = append(tasks, t)
+		tasks = append(tasks, *t)
 	}
 
-	if tasks == nil {
-		tasks = []models.Task{}
-	}
-
-	return tasks, nil
+	return database.EnsureSlice(tasks), nil
 }
 
 // GetTasksBySource returns tasks linked to a specific source (meeting or note)
@@ -135,46 +75,14 @@ func (a *App) GetTasksBySource(sourceType string, sourceID int64) ([]models.Task
 
 	var tasks []models.Task
 	for rows.Next() {
-		var t models.Task
-		var sID *int64
-		var description, dueDate *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&t.ID,
-			&t.ProjectID,
-			&t.SourceType,
-			&sID,
-			&t.Title,
-			&description,
-			&t.Status,
-			&t.Priority,
-			&dueDate,
-			&createdAt,
-			&updatedAt,
-		)
+		t, err := models.ScanTask(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %w", err)
 		}
-
-		t.SourceID = sID
-		if description != nil {
-			t.Description = *description
-		}
-		if dueDate != nil {
-			t.DueDate = *dueDate
-		}
-		t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		tasks = append(tasks, t)
+		tasks = append(tasks, *t)
 	}
 
-	if tasks == nil {
-		tasks = []models.Task{}
-	}
-
-	return tasks, nil
+	return database.EnsureSlice(tasks), nil
 }
 
 // GetAllTasks returns all tasks across projects with optional filters
@@ -214,51 +122,14 @@ func (a *App) GetAllTasks(statusFilter string, projectIDFilter int64) ([]models.
 
 	var tasks []models.TaskWithContext
 	for rows.Next() {
-		var t models.TaskWithContext
-		var sourceID *int64
-		var description, dueDate, sourceTitle *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&t.ID,
-			&t.ProjectID,
-			&t.SourceType,
-			&sourceID,
-			&t.Title,
-			&description,
-			&t.Status,
-			&t.Priority,
-			&dueDate,
-			&createdAt,
-			&updatedAt,
-			&t.ProjectName,
-			&sourceTitle,
-		)
+		t, err := models.ScanTaskWithContext(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %w", err)
 		}
-
-		t.SourceID = sourceID
-		if description != nil {
-			t.Description = *description
-		}
-		if dueDate != nil {
-			t.DueDate = *dueDate
-		}
-		if sourceTitle != nil {
-			t.SourceTitle = *sourceTitle
-		}
-		t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		tasks = append(tasks, t)
+		tasks = append(tasks, *t)
 	}
 
-	if tasks == nil {
-		tasks = []models.TaskWithContext{}
-	}
-
-	return tasks, nil
+	return database.EnsureSlice(tasks), nil
 }
 
 // UpdateTask updates an existing task
@@ -343,49 +214,12 @@ func (a *App) SearchTasks(query string) ([]models.TaskWithContext, error) {
 
 	var tasks []models.TaskWithContext
 	for rows.Next() {
-		var t models.TaskWithContext
-		var sourceID *int64
-		var description, dueDate, sourceTitle *string
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&t.ID,
-			&t.ProjectID,
-			&t.SourceType,
-			&sourceID,
-			&t.Title,
-			&description,
-			&t.Status,
-			&t.Priority,
-			&dueDate,
-			&createdAt,
-			&updatedAt,
-			&t.ProjectName,
-			&sourceTitle,
-		)
+		t, err := models.ScanTaskWithContext(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan task: %w", err)
 		}
-
-		t.SourceID = sourceID
-		if description != nil {
-			t.Description = *description
-		}
-		if dueDate != nil {
-			t.DueDate = *dueDate
-		}
-		if sourceTitle != nil {
-			t.SourceTitle = *sourceTitle
-		}
-		t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		tasks = append(tasks, t)
+		tasks = append(tasks, *t)
 	}
 
-	if tasks == nil {
-		tasks = []models.TaskWithContext{}
-	}
-
-	return tasks, nil
+	return database.EnsureSlice(tasks), nil
 }

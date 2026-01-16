@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"btrack/internal/database"
+)
 
 // Note represents a project note with markdown content
 type Note struct {
@@ -10,6 +14,65 @@ type Note struct {
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// NoteWithProject includes the parent project name for search results
+type NoteWithProject struct {
+	Note
+	ProjectName string `json:"projectName"`
+}
+
+// ScanNote scans a database row into a Note struct.
+// Expected columns: id, project_id, title, content, created_at, updated_at
+func ScanNote(scan func(dest ...any) error) (*Note, error) {
+	var n Note
+	var content *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&n.ID,
+		&n.ProjectID,
+		&n.Title,
+		&content,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	n.Content = database.NullableString(content)
+	n.CreatedAt = database.ParseTimestamp(createdAt)
+	n.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &n, nil
+}
+
+// ScanNoteWithProject scans a database row into a NoteWithProject struct.
+// Expected columns: id, project_id, title, content, created_at, updated_at, project_name
+func ScanNoteWithProject(scan func(dest ...any) error) (*NoteWithProject, error) {
+	var n NoteWithProject
+	var content *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&n.ID,
+		&n.ProjectID,
+		&n.Title,
+		&content,
+		&createdAt,
+		&updatedAt,
+		&n.ProjectName,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	n.Content = database.NullableString(content)
+	n.CreatedAt = database.ParseTimestamp(createdAt)
+	n.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &n, nil
 }
 
 // CreateNoteInput is the input for creating a new note

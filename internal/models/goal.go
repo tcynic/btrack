@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"btrack/internal/database"
+)
 
 // Goal status constants
 const (
@@ -20,6 +24,71 @@ type Goal struct {
 	TargetDate  string    `json:"targetDate"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+// GoalWithProject includes the parent project name for search results
+type GoalWithProject struct {
+	Goal
+	ProjectName string `json:"projectName"`
+}
+
+// ScanGoal scans a database row into a Goal struct.
+// Expected columns: id, project_id, title, description, status, target_date, created_at, updated_at
+func ScanGoal(scan func(dest ...any) error) (*Goal, error) {
+	var g Goal
+	var description, targetDate *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&g.ID,
+		&g.ProjectID,
+		&g.Title,
+		&description,
+		&g.Status,
+		&targetDate,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	g.Description = database.NullableString(description)
+	g.TargetDate = database.NullableString(targetDate)
+	g.CreatedAt = database.ParseTimestamp(createdAt)
+	g.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &g, nil
+}
+
+// ScanGoalWithProject scans a database row into a GoalWithProject struct.
+// Expected columns: id, project_id, title, description, status, target_date, created_at, updated_at, project_name
+func ScanGoalWithProject(scan func(dest ...any) error) (*GoalWithProject, error) {
+	var g GoalWithProject
+	var description, targetDate *string
+	var createdAt, updatedAt string
+
+	err := scan(
+		&g.ID,
+		&g.ProjectID,
+		&g.Title,
+		&description,
+		&g.Status,
+		&targetDate,
+		&createdAt,
+		&updatedAt,
+		&g.ProjectName,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	g.Description = database.NullableString(description)
+	g.TargetDate = database.NullableString(targetDate)
+	g.CreatedAt = database.ParseTimestamp(createdAt)
+	g.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &g, nil
 }
 
 // CreateGoalInput is the input for creating a new goal
