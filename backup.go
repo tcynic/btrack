@@ -198,7 +198,7 @@ func (a *App) cleanOldBackups(backupDir string, keepCount int) error {
 	
 	var backups []backupFile
 	for _, entry := range entries {
-		if entry.IsDir() || !filepath.Ext(entry.Name()) == ".db" {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".db" {
 			continue
 		}
 		

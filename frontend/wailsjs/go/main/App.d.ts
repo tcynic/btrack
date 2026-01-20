@@ -89,7 +89,11 @@ export function GetWeeklyEntries(arg1:number):Promise<Array<models.WeeklyEntryWi
 
 export function GetWeeklyEntriesByWeek(arg1:string):Promise<Array<models.WeeklyEntryWithProject>>;
 
+export function PermanentlyDeleteProject(arg1:number):Promise<void>;
+
 export function RestoreBackup():Promise<void>;
+
+export function RestoreProject(arg1:number):Promise<models.ProjectWithStats>;
 
 export function SearchGoals(arg1:string):Promise<Array<models.GoalWithProject>>;
 

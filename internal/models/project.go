@@ -101,22 +101,22 @@ func ScanProject(scan func(dest ...any) error) (*Project, error) {
 // Validate checks if the CreateProjectInput is valid
 func (c *CreateProjectInput) Validate() error {
 	if c.Name == "" {
-		return ErrNameRequired
+		return ValidationError("name", "project name is required")
 	}
 	if c.TotalSoldHours <= 0 {
-		return ErrInvalidHours
+		return ValidationError("totalSoldHours", "hours must be a positive number")
 	}
 	if c.SpecialistHours < 0 {
-		return ErrInvalidHours
+		return ValidationError("specialistHours", "hours must be a positive number")
 	}
 	if c.SpecialistHours >= c.TotalSoldHours {
-		return ErrSpecialistHoursTooHigh
+		return ValidationError("specialistHours", "specialist hours must be less than total sold hours")
 	}
 	if c.StartDate == "" || c.EndDate == "" {
-		return ErrDatesRequired
+		return ValidationError("date", "start date and end date are required")
 	}
 	if c.StartDate > c.EndDate {
-		return ErrInvalidDateRange
+		return ValidationError("date", "start date must be before end date")
 	}
 	return nil
 }

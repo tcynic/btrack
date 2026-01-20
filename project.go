@@ -116,12 +116,12 @@ func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
 	row := a.db.QueryRow(database.SelectProjectByID, id)
 	p, err := models.ScanProject(row.Scan)
 	if err != nil {
-		return nil, models.ErrProjectNotFound
+		return nil, models.NotFound("project")
 	}
 
 	stats, err := a.getProjectStats(p.ID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get project stats: %w", err)
+		return nil, models.Internal(err, "failed to get project stats")
 	}
 
 	projectWithStats := &models.ProjectWithStats{
@@ -294,7 +294,7 @@ func (a *App) DeleteProject(id int64) error {
 	}
 
 	if project.IsPersistent {
-		return fmt.Errorf("cannot delete persistent project")
+		return models.Forbidden("cannot delete persistent project")
 	}
 
 	// Auto-backup before deletion
@@ -314,7 +314,7 @@ func (a *App) DeleteProject(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return models.ErrProjectNotFound
+		return models.NotFound("project")
 	}
 
 	return nil
@@ -333,7 +333,7 @@ func (a *App) RestoreProject(id int64) (*models.ProjectWithStats, error) {
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrProjectNotFound
+		return nil, models.NotFound("project")
 	}
 
 	// Return the restored project
@@ -344,7 +344,7 @@ func (a *App) RestoreProject(id int64) (*models.ProjectWithStats, error) {
 	`, id)
 	p, err := models.ScanProject(row.Scan)
 	if err != nil {
-		return nil, models.ErrProjectNotFound
+		return nil, models.NotFound("project")
 	}
 
 	stats, err := a.getProjectStats(p.ID)
@@ -370,11 +370,11 @@ func (a *App) PermanentlyDeleteProject(id int64) error {
 		SELECT is_persistent FROM projects WHERE id = ?
 	`, id).Scan(&isPersistent)
 	if err != nil {
-		return models.ErrProjectNotFound
+		return models.NotFound("project")
 	}
 
 	if isPersistent == 1 {
-		return fmt.Errorf("cannot permanently delete persistent project")
+		return models.Forbidden("cannot permanently delete persistent project")
 	}
 
 	// Auto-backup before permanent deletion
@@ -394,7 +394,7 @@ func (a *App) PermanentlyDeleteProject(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return models.ErrProjectNotFound
+		return models.NotFound("project")
 	}
 
 	return nil

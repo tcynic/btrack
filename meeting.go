@@ -58,7 +58,7 @@ func (a *App) GetMeeting(id int64) (*models.Meeting, error) {
 	row := a.db.QueryRow(database.SelectMeetingByID, id)
 	m, err := models.ScanMeeting(row.Scan)
 	if err != nil {
-		return nil, models.ErrMeetingNotFound
+		return nil, models.NotFound("meeting")
 	}
 	return m, nil
 }
@@ -87,7 +87,7 @@ func (a *App) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meeting, e
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrMeetingNotFound
+		return nil, models.NotFound("meeting")
 	}
 
 	return a.GetMeeting(input.ID)
@@ -112,7 +112,7 @@ func (a *App) DeleteMeeting(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return models.ErrMeetingNotFound
+		return models.NotFound("meeting")
 	}
 
 	return nil

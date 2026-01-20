@@ -55,7 +55,7 @@ func (a *App) GetNote(id int64) (*models.Note, error) {
 	row := a.db.QueryRow(database.SelectNoteByID, id)
 	n, err := models.ScanNote(row.Scan)
 	if err != nil {
-		return nil, models.ErrNoteNotFound
+		return nil, models.NotFound("note")
 	}
 	return n, nil
 }
@@ -81,7 +81,7 @@ func (a *App) UpdateNote(input models.UpdateNoteInput) (*models.Note, error) {
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrNoteNotFound
+		return nil, models.NotFound("note")
 	}
 
 	return a.GetNote(input.ID)
@@ -106,7 +106,7 @@ func (a *App) DeleteNote(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return models.ErrNoteNotFound
+		return models.NotFound("note")
 	}
 
 	return nil

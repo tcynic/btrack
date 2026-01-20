@@ -40,7 +40,7 @@ func (a *App) GetTask(id int64) (*models.Task, error) {
 	row := a.db.QueryRow(database.SelectTaskByID, id)
 	t, err := models.ScanTask(row.Scan)
 	if err != nil {
-		return nil, models.ErrTaskNotFound
+		return nil, models.NotFound("task")
 	}
 	return t, nil
 }
@@ -156,7 +156,7 @@ func (a *App) UpdateTask(input models.UpdateTaskInput) (*models.Task, error) {
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrTaskNotFound
+		return nil, models.NotFound("task")
 	}
 
 	return a.GetTask(input.ID)
@@ -165,7 +165,7 @@ func (a *App) UpdateTask(input models.UpdateTaskInput) (*models.Task, error) {
 // UpdateTaskStatus updates only the status of a task
 func (a *App) UpdateTaskStatus(id int64, status string) (*models.Task, error) {
 	if !models.IsValidTaskStatus(status) {
-		return nil, models.ErrInvalidStatus
+		return nil, models.ValidationError("status", "invalid status value")
 	}
 
 	result, err := a.db.Exec(database.UpdateTaskStatus, status, id)
@@ -179,7 +179,7 @@ func (a *App) UpdateTaskStatus(id int64, status string) (*models.Task, error) {
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrTaskNotFound
+		return nil, models.NotFound("task")
 	}
 
 	return a.GetTask(id)
@@ -198,7 +198,7 @@ func (a *App) DeleteTask(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return models.ErrTaskNotFound
+		return models.NotFound("task")
 	}
 
 	return nil

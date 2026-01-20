@@ -92,7 +92,7 @@ type UpdateNoteInput struct {
 // Validate checks if the CreateNoteInput is valid
 func (c *CreateNoteInput) Validate() error {
 	if c.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	return nil
 }
@@ -100,7 +100,7 @@ func (c *CreateNoteInput) Validate() error {
 // Validate checks if the UpdateNoteInput is valid
 func (u *UpdateNoteInput) Validate() error {
 	if u.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	return nil
 }

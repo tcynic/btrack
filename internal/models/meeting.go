@@ -109,10 +109,10 @@ type UpdateMeetingInput struct {
 // Validate checks if the CreateMeetingInput is valid
 func (c *CreateMeetingInput) Validate() error {
 	if c.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	if c.MeetingDate == "" {
-		return ErrDateRequired
+		return ValidationError("meetingDate", "date is required")
 	}
 	if c.DurationMinutes <= 0 {
 		c.DurationMinutes = 60 // Default to 60 minutes
@@ -123,10 +123,10 @@ func (c *CreateMeetingInput) Validate() error {
 // Validate checks if the UpdateMeetingInput is valid
 func (u *UpdateMeetingInput) Validate() error {
 	if u.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	if u.MeetingDate == "" {
-		return ErrDateRequired
+		return ValidationError("meetingDate", "date is required")
 	}
 	if u.DurationMinutes <= 0 {
 		u.DurationMinutes = 60

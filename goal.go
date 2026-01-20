@@ -56,7 +56,7 @@ func (a *App) GetGoal(id int64) (*models.Goal, error) {
 	row := a.db.QueryRow(database.SelectGoalByID, id)
 	g, err := models.ScanGoal(row.Scan)
 	if err != nil {
-		return nil, models.ErrGoalNotFound
+		return nil, models.NotFound("goal")
 	}
 	return g, nil
 }
@@ -89,7 +89,7 @@ func (a *App) UpdateGoal(input models.UpdateGoalInput) (*models.Goal, error) {
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrGoalNotFound
+		return nil, models.NotFound("goal")
 	}
 
 	return a.GetGoal(input.ID)
@@ -98,7 +98,7 @@ func (a *App) UpdateGoal(input models.UpdateGoalInput) (*models.Goal, error) {
 // UpdateGoalStatus updates only the status of a goal
 func (a *App) UpdateGoalStatus(id int64, status string) (*models.Goal, error) {
 	if !models.IsValidStatus(status) {
-		return nil, models.ErrInvalidStatus
+		return nil, models.ValidationError("status", "invalid status value")
 	}
 
 	result, err := a.db.Exec(database.UpdateGoalStatus, status, id)
@@ -112,7 +112,7 @@ func (a *App) UpdateGoalStatus(id int64, status string) (*models.Goal, error) {
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrGoalNotFound
+		return nil, models.NotFound("goal")
 	}
 
 	return a.GetGoal(id)
@@ -131,7 +131,7 @@ func (a *App) DeleteGoal(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return models.ErrGoalNotFound
+		return models.NotFound("goal")
 	}
 
 	return nil

@@ -48,14 +48,14 @@ func (a *App) GetWeeklyEntries(projectID int64) ([]models.WeeklyEntryWithStatus,
 // UpdateActualHours updates the actual hours for a specific weekly entry
 func (a *App) UpdateActualHours(input models.UpdateActualHoursInput) (*models.WeeklyEntryWithStatus, error) {
 	if input.ActualHours < 0 {
-		return nil, models.ErrInvalidHours
+		return nil, models.ValidationError("actualHours", "hours must be a positive number")
 	}
 
 	// Get the entry to verify it exists and check if it's a past week
 	var weekStartDate string
 	err := a.db.QueryRow(`SELECT week_start_date FROM weekly_entries WHERE id = ?`, input.EntryID).Scan(&weekStartDate)
 	if err != nil {
-		return nil, models.ErrEntryNotFound
+		return nil, models.NotFound("weekly entry")
 	}
 
 	// Check if this is a past or current week (allow editing)
@@ -64,7 +64,7 @@ func (a *App) UpdateActualHours(input models.UpdateActualHoursInput) (*models.We
 	nextMonday := currentMonday.AddDate(0, 0, 7)
 
 	if weekStart.After(nextMonday) || weekStart.Equal(nextMonday) {
-		return nil, models.ErrCannotEditFutureWeek
+		return nil, models.Forbidden("cannot edit actual hours for future weeks")
 	}
 
 	// Update the actual hours
@@ -79,7 +79,7 @@ func (a *App) UpdateActualHours(input models.UpdateActualHoursInput) (*models.We
 	}
 
 	if rowsAffected == 0 {
-		return nil, models.ErrEntryNotFound
+		return nil, models.NotFound("weekly entry")
 	}
 
 	// Return the updated entry
@@ -200,7 +200,7 @@ func (a *App) getWeeklyEntry(entryID int64) (*models.WeeklyEntryWithStatus, erro
 	`, entryID)
 	e, err := models.ScanWeeklyEntry(row.Scan)
 	if err != nil {
-		return nil, models.ErrEntryNotFound
+		return nil, models.NotFound("weekly entry")
 	}
 
 	currentMonday := getCurrentWeekMonday()

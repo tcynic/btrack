@@ -174,8 +174,16 @@ export function GetWeeklyEntriesByWeek(arg1) {
   return window['go']['main']['App']['GetWeeklyEntriesByWeek'](arg1);
 }
 
+export function PermanentlyDeleteProject(arg1) {
+  return window['go']['main']['App']['PermanentlyDeleteProject'](arg1);
+}
+
 export function RestoreBackup() {
   return window['go']['main']['App']['RestoreBackup']();
+}
+
+export function RestoreProject(arg1) {
+  return window['go']['main']['App']['RestoreProject'](arg1);
 }
 
 export function SearchGoals(arg1) {
