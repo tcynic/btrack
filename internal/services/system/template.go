@@ -10,12 +10,12 @@ import (
 
 // ProjectTemplate represents a saved project template
 type ProjectTemplate struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	TotalSoldHours  int       `json:"totalSoldHours"`
-	SpecialistHours int       `json:"specialistHours"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ID              int64  `json:"id"`
+	Name            string `json:"name"`
+	TotalSoldHours  int    `json:"totalSoldHours"`
+	SpecialistHours int    `json:"specialistHours"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
 }
 
 // CreateProjectFromTemplateInput represents input for creating a project from a template
@@ -67,22 +67,19 @@ func (s *Service) GetTemplates() ([]ProjectTemplate, error) {
 	var templates []ProjectTemplate
 	for rows.Next() {
 		var t ProjectTemplate
-		var createdAt, updatedAt string
 
 		err := rows.Scan(
 			&t.ID,
 			&t.Name,
 			&t.TotalSoldHours,
 			&t.SpecialistHours,
-			&createdAt,
-			&updatedAt,
+			&t.CreatedAt,
+			&t.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan template: %w", err)
 		}
 
-		t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 		templates = append(templates, t)
 	}
 
@@ -96,22 +93,18 @@ func (s *Service) GetTemplates() ([]ProjectTemplate, error) {
 // GetTemplate returns a single template by ID
 func (s *Service) GetTemplate(id int64) (*ProjectTemplate, error) {
 	var t ProjectTemplate
-	var createdAt, updatedAt string
 
 	err := s.db.QueryRow(database.SelectTemplateByID, id).Scan(
 		&t.ID,
 		&t.Name,
 		&t.TotalSoldHours,
 		&t.SpecialistHours,
-		&createdAt,
-		&updatedAt,
+		&t.CreatedAt,
+		&t.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("template not found: %w", err)
 	}
-
-	t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
 	return &t, nil
 }
