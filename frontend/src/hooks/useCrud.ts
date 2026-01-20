@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { getErrorMessage, type AppError } from '../types/error'
 
 /**
  * Generic CRUD hook factory that provides standard async state management.
@@ -9,6 +10,7 @@ export interface CrudState<T> {
   items: T[]
   isLoading: boolean
   error: string | null
+  appError: AppError | null
 }
 
 export interface CrudActions<T, CreateInput, UpdateInput> {
@@ -39,15 +41,21 @@ export function useCrud<T, CreateInput, UpdateInput>(
   const [items, setItems] = useState<T[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [appError, setAppError] = useState<AppError | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+    setAppError(null)
     try {
       const data = await loadFn()
       setItems(data as T[])
     } catch (err) {
-      setError(String(err))
+      const errorMessage = getErrorMessage(err)
+      setError(errorMessage)
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        setAppError(err as AppError)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -56,12 +64,17 @@ export function useCrud<T, CreateInput, UpdateInput>(
   const create = useCallback(async (input: CreateInput): Promise<T> => {
     setIsLoading(true)
     setError(null)
+    setAppError(null)
     try {
       const item = await createFn(input)
       setItems((prev) => [item as T, ...prev])
       return item as T
     } catch (err) {
-      setError(String(err))
+      const errorMessage = getErrorMessage(err)
+      setError(errorMessage)
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        setAppError(err as AppError)
+      }
       throw err
     } finally {
       setIsLoading(false)
@@ -71,6 +84,7 @@ export function useCrud<T, CreateInput, UpdateInput>(
   const update = useCallback(async (input: UpdateInput): Promise<T> => {
     setIsLoading(true)
     setError(null)
+    setAppError(null)
     try {
       const item = await updateFn(input)
       setItems((prev) =>
@@ -78,7 +92,11 @@ export function useCrud<T, CreateInput, UpdateInput>(
       )
       return item as T
     } catch (err) {
-      setError(String(err))
+      const errorMessage = getErrorMessage(err)
+      setError(errorMessage)
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        setAppError(err as AppError)
+      }
       throw err
     } finally {
       setIsLoading(false)
@@ -88,11 +106,16 @@ export function useCrud<T, CreateInput, UpdateInput>(
   const remove = useCallback(async (id: number): Promise<void> => {
     setIsLoading(true)
     setError(null)
+    setAppError(null)
     try {
       await deleteFn(id)
       setItems((prev) => prev.filter((i) => getId(i) !== id))
     } catch (err) {
-      setError(String(err))
+      const errorMessage = getErrorMessage(err)
+      setError(errorMessage)
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        setAppError(err as AppError)
+      }
       throw err
     } finally {
       setIsLoading(false)
@@ -103,6 +126,7 @@ export function useCrud<T, CreateInput, UpdateInput>(
     items,
     isLoading,
     error,
+    appError,
     load,
     create,
     update,
