@@ -10,20 +10,21 @@ const (
 	SelectAllProjects = `
 		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
+		WHERE deleted_at IS NULL
 		ORDER BY is_persistent DESC, created_at DESC
 	`
 
 	SelectActiveProjects = `
 		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
-		WHERE is_active = 1
+		WHERE is_active = 1 AND deleted_at IS NULL
 		ORDER BY is_persistent DESC, created_at DESC
 	`
 
 	SelectProjectByID = `
 		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
-		WHERE id = ?
+		WHERE id = ? AND deleted_at IS NULL
 	`
 
 	UpdateProject = `
@@ -32,12 +33,20 @@ const (
 		WHERE id = ?
 	`
 
-	DeleteProject = `
-		DELETE FROM projects WHERE id = ?
+	SoftDeleteProject = `
+		UPDATE projects 
+		SET deleted_at = datetime('now'), updated_at = datetime('now') 
+		WHERE id = ? AND deleted_at IS NULL
 	`
 
-	SoftDeleteProject = `
-		UPDATE projects SET is_active = 0, updated_at = datetime('now') WHERE id = ?
+	RestoreProject = `
+		UPDATE projects 
+		SET deleted_at = NULL, updated_at = datetime('now') 
+		WHERE id = ?
+	`
+
+	PermanentlyDeleteProject = `
+		DELETE FROM projects WHERE id = ?
 	`
 )
 
@@ -265,7 +274,7 @@ const (
 	SearchProjects = `
 		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
 		FROM projects
-		WHERE name LIKE '%' || ? || '%'
+		WHERE name LIKE '%' || ? || '%' AND deleted_at IS NULL
 		ORDER BY is_active DESC, created_at DESC
 		LIMIT 50
 	`

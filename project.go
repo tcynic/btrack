@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"btrack/internal/database"
@@ -284,7 +285,7 @@ func (a *App) UpdateProject(input models.UpdateProjectInput) (*models.ProjectWit
 	return a.GetProject(input.ID)
 }
 
-// DeleteProject removes a project and its weekly entries
+// DeleteProject soft-deletes a project (sets deleted_at timestamp)
 func (a *App) DeleteProject(id int64) error {
 	// Check if project is persistent
 	project, err := a.GetProject(id)
@@ -296,9 +297,95 @@ func (a *App) DeleteProject(id int64) error {
 		return fmt.Errorf("cannot delete persistent project")
 	}
 
-	result, err := a.db.Exec(database.DeleteProject, id)
+	// Auto-backup before deletion
+	if err := a.autoBackup(); err != nil {
+		// Log warning but don't fail the operation
+		log.Printf("Warning: auto-backup failed before delete: %v", err)
+	}
+
+	result, err := a.db.Exec(database.SoftDeleteProject, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete project: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return models.ErrProjectNotFound
+	}
+
+	return nil
+}
+
+// RestoreProject restores a soft-deleted project
+func (a *App) RestoreProject(id int64) (*models.ProjectWithStats, error) {
+	result, err := a.db.Exec(database.RestoreProject, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to restore project: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return nil, models.ErrProjectNotFound
+	}
+
+	// Return the restored project
+	// Note: We need to query without the deleted_at filter
+	row := a.db.QueryRow(`
+		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
+		FROM projects WHERE id = ?
+	`, id)
+	p, err := models.ScanProject(row.Scan)
+	if err != nil {
+		return nil, models.ErrProjectNotFound
+	}
+
+	stats, err := a.getProjectStats(p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project stats: %w", err)
+	}
+
+	return &models.ProjectWithStats{
+		Project:           *p,
+		MyHours:           p.TotalSoldHours - p.SpecialistHours,
+		TotalWeeks:        stats.TotalWeeks,
+		TotalPlannedHours: stats.TotalPlanned,
+		TotalActualHours:  stats.TotalActual,
+	}, nil
+}
+
+// PermanentlyDeleteProject permanently removes a project and its weekly entries
+func (a *App) PermanentlyDeleteProject(id int64) error {
+	// Check if project is persistent
+	// Query without deleted_at filter to check persistence
+	var isPersistent int
+	err := a.db.QueryRow(`
+		SELECT is_persistent FROM projects WHERE id = ?
+	`, id).Scan(&isPersistent)
+	if err != nil {
+		return models.ErrProjectNotFound
+	}
+
+	if isPersistent == 1 {
+		return fmt.Errorf("cannot permanently delete persistent project")
+	}
+
+	// Auto-backup before permanent deletion
+	if err := a.autoBackup(); err != nil {
+		// Log warning but don't fail the operation
+		log.Printf("Warning: auto-backup failed before permanent delete: %v", err)
+	}
+
+	result, err := a.db.Exec(database.PermanentlyDeleteProject, id)
+	if err != nil {
+		return fmt.Errorf("failed to permanently delete project: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()

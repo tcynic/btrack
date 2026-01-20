@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"btrack/internal/database"
@@ -101,6 +103,12 @@ func (a *App) RestoreBackup() error {
 		return fmt.Errorf("backup file not found: %w", err)
 	}
 
+	// Auto-backup before restore
+	if err := a.autoBackup(); err != nil {
+		// Log warning but don't fail the operation
+		log.Printf("Warning: auto-backup failed before restore: %v", err)
+	}
+
 	// Get current database path
 	dbPath := a.getDBPath()
 	
@@ -145,6 +153,87 @@ func (a *App) getDBPath() string {
 		return ""
 	}
 	return filepath.Join(homeDir, "Library", "Application Support", "btrack", "btrack.db")
+}
+
+// autoBackup creates an automatic backup before destructive operations
+func (a *App) autoBackup() error {
+	dbPath := a.getDBPath()
+	backupDir := filepath.Join(filepath.Dir(dbPath), "backups")
+	
+	// Create backups directory if it doesn't exist
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return fmt.Errorf("failed to create backup directory: %w", err)
+	}
+	
+	// Create backup with timestamp
+	backupName := fmt.Sprintf("auto-backup-%s.db", time.Now().Format("2006-01-02-150405"))
+	backupPath := filepath.Join(backupDir, backupName)
+	
+	if err := copyFile(dbPath, backupPath); err != nil {
+		return fmt.Errorf("failed to create auto-backup: %w", err)
+	}
+	
+	log.Printf("Auto-backup created: %s", backupPath)
+	
+	// Clean up old backups
+	if err := a.cleanOldBackups(backupDir, 5); err != nil {
+		log.Printf("Warning: failed to clean old backups: %v", err)
+	}
+	
+	return nil
+}
+
+// cleanOldBackups removes old auto-backups, keeping only the most recent N backups
+func (a *App) cleanOldBackups(backupDir string, keepCount int) error {
+	entries, err := os.ReadDir(backupDir)
+	if err != nil {
+		return err
+	}
+	
+	// Filter auto-backups and get their info
+	type backupFile struct {
+		name    string
+		modTime time.Time
+	}
+	
+	var backups []backupFile
+	for _, entry := range entries {
+		if entry.IsDir() || !filepath.Ext(entry.Name()) == ".db" {
+			continue
+		}
+		
+		// Only process auto-backups
+		if len(entry.Name()) < 12 || entry.Name()[:12] != "auto-backup-" {
+			continue
+		}
+		
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		
+		backups = append(backups, backupFile{
+			name:    entry.Name(),
+			modTime: info.ModTime(),
+		})
+	}
+	
+	// Sort by modification time (newest first)
+	sort.Slice(backups, func(i, j int) bool {
+		return backups[i].modTime.After(backups[j].modTime)
+	})
+	
+	// Delete old backups beyond keepCount
+	for i := keepCount; i < len(backups); i++ {
+		backupPath := filepath.Join(backupDir, backups[i].name)
+		if err := os.Remove(backupPath); err != nil {
+			log.Printf("Warning: failed to delete old backup %s: %v", backups[i].name, err)
+		} else {
+			log.Printf("Deleted old backup: %s", backups[i].name)
+		}
+	}
+	
+	return nil
 }
 
 // copyFile copies a file from src to dst
