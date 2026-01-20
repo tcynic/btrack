@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"btrack/internal/database"
+)
 
 // WeeklyEntry represents planned and actual hours for a specific week
 type WeeklyEntry struct {
@@ -32,6 +36,61 @@ type WeeklyEntryWithProject struct {
 type UpdateActualHoursInput struct {
 	EntryID     int64 `json:"entryId"`
 	ActualHours int   `json:"actualHours"`
+}
+
+// ScanWeeklyEntry scans a database row into a WeeklyEntry struct.
+// Expected columns: id, project_id, week_start_date, week_number, planned_hours, actual_hours, created_at, updated_at
+func ScanWeeklyEntry(scan func(dest ...any) error) (*WeeklyEntry, error) {
+	var e WeeklyEntry
+	var createdAt, updatedAt string
+
+	err := scan(
+		&e.ID,
+		&e.ProjectID,
+		&e.WeekStartDate,
+		&e.WeekNumber,
+		&e.PlannedHours,
+		&e.ActualHours,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	e.CreatedAt = database.ParseTimestamp(createdAt)
+	e.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &e, nil
+}
+
+// ScanWeeklyEntryWithProject scans a database row into a WeeklyEntryWithProject struct.
+// Expected columns: id, project_id, week_start_date, week_number, planned_hours, actual_hours, created_at, updated_at, project_name
+func ScanWeeklyEntryWithProject(scan func(dest ...any) error, isPastWeek bool) (*WeeklyEntryWithProject, error) {
+	var e WeeklyEntryWithProject
+	var createdAt, updatedAt string
+
+	err := scan(
+		&e.ID,
+		&e.ProjectID,
+		&e.WeekStartDate,
+		&e.WeekNumber,
+		&e.PlannedHours,
+		&e.ActualHours,
+		&createdAt,
+		&updatedAt,
+		&e.ProjectName,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	e.CreatedAt = database.ParseTimestamp(createdAt)
+	e.UpdatedAt = database.ParseTimestamp(updatedAt)
+	e.IsPastWeek = isPastWeek
+	e.CalculateStatus()
+
+	return &e, nil
 }
 
 // CalculateStatus computes the status based on planned vs actual hours

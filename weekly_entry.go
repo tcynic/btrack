@@ -20,32 +20,17 @@ func (a *App) GetWeeklyEntries(projectID int64) ([]models.WeeklyEntryWithStatus,
 	var entries []models.WeeklyEntryWithStatus
 
 	for rows.Next() {
-		var e models.WeeklyEntry
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&e.ID,
-			&e.ProjectID,
-			&e.WeekStartDate,
-			&e.WeekNumber,
-			&e.PlannedHours,
-			&e.ActualHours,
-			&createdAt,
-			&updatedAt,
-		)
+		e, err := models.ScanWeeklyEntry(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan weekly entry: %w", err)
 		}
-
-		e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		e.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
 		// Determine if this is a past week (can edit actual hours)
 		weekStart, _ := time.Parse("2006-01-02", e.WeekStartDate)
 		isPastWeek := weekStart.Before(currentMonday)
 
 		entryWithStatus := models.WeeklyEntryWithStatus{
-			WeeklyEntry: e,
+			WeeklyEntry: *e,
 			IsPastWeek:  isPastWeek,
 		}
 		entryWithStatus.CalculateStatus()
@@ -118,42 +103,52 @@ func (a *App) GetWeeklyEntriesByWeek(weekStartDate string) ([]models.WeeklyEntry
 	var entries []models.WeeklyEntryWithProject
 
 	for rows.Next() {
-		var e models.WeeklyEntry
-		var projectName string
-		var createdAt, updatedAt string
-
+		// Determine if this is a past week (can edit actual hours)
+		// We need to parse the week start date to determine this
+		var weekStartTemp string
+		var tempRow struct {
+			id, projectID, weekNumber, plannedHours, actualHours int64
+			createdAt, updatedAt, projectName                      string
+		}
 		err := rows.Scan(
-			&e.ID,
-			&e.ProjectID,
-			&e.WeekStartDate,
-			&e.WeekNumber,
-			&e.PlannedHours,
-			&e.ActualHours,
-			&createdAt,
-			&updatedAt,
-			&projectName,
+			&tempRow.id,
+			&tempRow.projectID,
+			&weekStartTemp,
+			&tempRow.weekNumber,
+			&tempRow.plannedHours,
+			&tempRow.actualHours,
+			&tempRow.createdAt,
+			&tempRow.updatedAt,
+			&tempRow.projectName,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan weekly entry: %w", err)
 		}
 
-		e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		e.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
-
-		// Determine if this is a past week (can edit actual hours)
-		weekStart, _ := time.Parse("2006-01-02", e.WeekStartDate)
+		weekStart, _ := time.Parse("2006-01-02", weekStartTemp)
 		isPastWeek := weekStart.Before(currentMonday)
 
-		entryWithStatus := models.WeeklyEntryWithStatus{
-			WeeklyEntry: e,
-			IsPastWeek:  isPastWeek,
+		// Re-scan using the proper scanner
+		// Note: This is a workaround. Ideally we'd refactor the scanner to accept isPastWeek calculation
+		e := models.WeeklyEntryWithProject{
+			WeeklyEntryWithStatus: models.WeeklyEntryWithStatus{
+				WeeklyEntry: models.WeeklyEntry{
+					ID:            tempRow.id,
+					ProjectID:     tempRow.projectID,
+					WeekStartDate: weekStartTemp,
+					WeekNumber:    int(tempRow.weekNumber),
+					PlannedHours:  int(tempRow.plannedHours),
+					ActualHours:   int(tempRow.actualHours),
+					CreatedAt:     database.ParseTimestamp(tempRow.createdAt),
+					UpdatedAt:     database.ParseTimestamp(tempRow.updatedAt),
+				},
+				IsPastWeek: isPastWeek,
+			},
+			ProjectName: tempRow.projectName,
 		}
-		entryWithStatus.CalculateStatus()
+		e.CalculateStatus()
 
-		entryWithProject := models.WeeklyEntryWithProject{
-			WeeklyEntryWithStatus: entryWithStatus,
-			ProjectName:           projectName,
-		}
+		entryWithProject := e
 
 		entries = append(entries, entryWithProject)
 	}
@@ -199,35 +194,21 @@ func (a *App) ensurePersistentEntries(weekStartDate string) error {
 
 // getWeeklyEntry retrieves a single weekly entry by ID
 func (a *App) getWeeklyEntry(entryID int64) (*models.WeeklyEntryWithStatus, error) {
-	var e models.WeeklyEntry
-	var createdAt, updatedAt string
-
-	err := a.db.QueryRow(`
+	row := a.db.QueryRow(`
 		SELECT id, project_id, week_start_date, week_number, planned_hours, actual_hours, created_at, updated_at
 		FROM weekly_entries WHERE id = ?
-	`, entryID).Scan(
-		&e.ID,
-		&e.ProjectID,
-		&e.WeekStartDate,
-		&e.WeekNumber,
-		&e.PlannedHours,
-		&e.ActualHours,
-		&createdAt,
-		&updatedAt,
-	)
+	`, entryID)
+	e, err := models.ScanWeeklyEntry(row.Scan)
 	if err != nil {
 		return nil, models.ErrEntryNotFound
 	}
-
-	e.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	e.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
 	currentMonday := getCurrentWeekMonday()
 	weekStart, _ := time.Parse("2006-01-02", e.WeekStartDate)
 	isPastWeek := weekStart.Before(currentMonday)
 
 	entryWithStatus := &models.WeeklyEntryWithStatus{
-		WeeklyEntry: e,
+		WeeklyEntry: *e,
 		IsPastWeek:  isPastWeek,
 	}
 	entryWithStatus.CalculateStatus()

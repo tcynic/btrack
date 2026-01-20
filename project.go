@@ -81,30 +81,10 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 
 	var projects []models.ProjectWithStats
 	for rows.Next() {
-		var p models.Project
-		var isActive, isPersistent int
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.TotalSoldHours,
-			&p.SpecialistHours,
-			&p.StartDate,
-			&p.EndDate,
-			&isActive,
-			&isPersistent,
-			&createdAt,
-			&updatedAt,
-		)
+		p, err := models.ScanProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan project: %w", err)
 		}
-
-		p.IsActive = isActive == 1
-		p.IsPersistent = isPersistent == 1
-		p.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
 		// Get stats for this project
 		stats, err := a.getProjectStats(p.ID)
@@ -113,7 +93,7 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 		}
 
 		projectWithStats := models.ProjectWithStats{
-			Project:           p,
+			Project:           *p,
 			MyHours:           p.TotalSoldHours - p.SpecialistHours,
 			TotalWeeks:        stats.TotalWeeks,
 			TotalPlannedHours: stats.TotalPlanned,
@@ -132,30 +112,11 @@ func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error)
 
 // GetProject returns a single project by ID with stats
 func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
-	var p models.Project
-	var isActive, isPersistent int
-	var createdAt, updatedAt string
-
-	err := a.db.QueryRow(database.SelectProjectByID, id).Scan(
-		&p.ID,
-		&p.Name,
-		&p.TotalSoldHours,
-		&p.SpecialistHours,
-		&p.StartDate,
-		&p.EndDate,
-		&isActive,
-		&isPersistent,
-		&createdAt,
-		&updatedAt,
-	)
+	row := a.db.QueryRow(database.SelectProjectByID, id)
+	p, err := models.ScanProject(row.Scan)
 	if err != nil {
 		return nil, models.ErrProjectNotFound
 	}
-
-	p.IsActive = isActive == 1
-	p.IsPersistent = isPersistent == 1
-	p.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
 	stats, err := a.getProjectStats(p.ID)
 	if err != nil {
@@ -163,7 +124,7 @@ func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
 	}
 
 	projectWithStats := &models.ProjectWithStats{
-		Project:           p,
+		Project:           *p,
 		MyHours:           p.TotalSoldHours - p.SpecialistHours,
 		TotalWeeks:        stats.TotalWeeks,
 		TotalPlannedHours: stats.TotalPlanned,
@@ -387,30 +348,10 @@ func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
 
 	var projects []models.ProjectWithStats
 	for rows.Next() {
-		var p models.Project
-		var isActive, isPersistent int
-		var createdAt, updatedAt string
-
-		err := rows.Scan(
-			&p.ID,
-			&p.Name,
-			&p.TotalSoldHours,
-			&p.SpecialistHours,
-			&p.StartDate,
-			&p.EndDate,
-			&isActive,
-			&isPersistent,
-			&createdAt,
-			&updatedAt,
-		)
+		p, err := models.ScanProject(rows.Scan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan project: %w", err)
 		}
-
-		p.IsActive = isActive == 1
-		p.IsPersistent = isPersistent == 1
-		p.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-		p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
 
 		stats, err := a.getProjectStats(p.ID)
 		if err != nil {
@@ -418,7 +359,7 @@ func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
 		}
 
 		projectWithStats := models.ProjectWithStats{
-			Project:           p,
+			Project:           *p,
 			MyHours:           p.TotalSoldHours - p.SpecialistHours,
 			TotalWeeks:        stats.TotalWeeks,
 			TotalPlannedHours: stats.TotalPlanned,

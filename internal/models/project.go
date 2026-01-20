@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"btrack/internal/database"
+)
 
 // Project represents a client project with sold hours
 type Project struct {
@@ -61,6 +65,37 @@ type UpdateProjectInput struct {
 	StartDate       string `json:"startDate"`
 	EndDate         string `json:"endDate"`
 	IsActive        bool   `json:"isActive"`
+}
+
+// ScanProject scans a database row into a Project struct.
+// Expected columns: id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
+func ScanProject(scan func(dest ...any) error) (*Project, error) {
+	var p Project
+	var isActive, isPersistent int
+	var createdAt, updatedAt string
+
+	err := scan(
+		&p.ID,
+		&p.Name,
+		&p.TotalSoldHours,
+		&p.SpecialistHours,
+		&p.StartDate,
+		&p.EndDate,
+		&isActive,
+		&isPersistent,
+		&createdAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	p.IsActive = isActive == 1
+	p.IsPersistent = isPersistent == 1
+	p.CreatedAt = database.ParseTimestamp(createdAt)
+	p.UpdatedAt = database.ParseTimestamp(updatedAt)
+
+	return &p, nil
 }
 
 // Validate checks if the CreateProjectInput is valid

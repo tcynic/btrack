@@ -3,35 +3,99 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
 )
 
-// RunMigrations creates the database schema
+// Migration represents a single database migration
+type Migration struct {
+	Version     int
+	Description string
+	SQL         string
+}
+
+// RunMigrations creates the database schema using versioned migrations
 func RunMigrations(db *sql.DB) error {
-	migrations := []string{
-		createProjectsTable,
-		createWeeklyEntriesTable,
-		createIndexes,
-		createMeetingsTable,
-		createNotesTable,
-		createGoalsTable,
-		createNewIndexes,
-		createTemplatesTable,
-		createTasksTable,
-		createTaskIndexes,
+	// Create schema_migrations table if it doesn't exist
+	if err := createMigrationsTable(db); err != nil {
+		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
-	for _, migration := range migrations {
-		if _, err := db.Exec(migration); err != nil {
-			return fmt.Errorf("migration failed: %w", err)
+	// Get current schema version
+	currentVersion, err := getCurrentVersion(db)
+	if err != nil {
+		return fmt.Errorf("failed to get current version: %w", err)
+	}
+
+	log.Printf("Current schema version: %d", currentVersion)
+
+	// Define migrations in order
+	migrations := []Migration{
+		{1, "Create projects table", createProjectsTable},
+		{2, "Create weekly entries table", createWeeklyEntriesTable},
+		{3, "Create initial indexes", createIndexes},
+		{4, "Create meetings table", createMeetingsTable},
+		{5, "Create notes table", createNotesTable},
+		{6, "Create goals table", createGoalsTable},
+		{7, "Create additional indexes", createNewIndexes},
+		{8, "Create templates table", createTemplatesTable},
+		{9, "Create tasks table", createTasksTable},
+		{10, "Create task indexes", createTaskIndexes},
+		{11, "Add is_persistent column to projects", addPersistentColumnSQL},
+		{12, "Add deleted_at column to projects", addDeletedAtColumnSQL},
+	}
+
+	// Apply migrations that haven't been applied yet
+	for _, m := range migrations {
+		if m.Version <= currentVersion {
+			continue // Migration already applied
+		}
+
+		log.Printf("Applying migration %d: %s", m.Version, m.Description)
+		if _, err := db.Exec(m.SQL); err != nil {
+			return fmt.Errorf("migration %d failed: %w", m.Version, err)
+		}
+
+		// Record migration
+		if err := recordMigration(db, m.Version, m.Description); err != nil {
+			return fmt.Errorf("failed to record migration %d: %w", m.Version, err)
 		}
 	}
 
-	// Handle is_persistent column migration separately (idempotent)
-	if err := addPersistentColumnIfNotExists(db); err != nil {
-		return fmt.Errorf("failed to add is_persistent column: %w", err)
-	}
-
+	log.Printf("Migrations complete. Schema version: %d", len(migrations))
 	return nil
+}
+
+// createMigrationsTable creates the schema_migrations table
+func createMigrationsTable(db *sql.DB) error {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version INTEGER PRIMARY KEY,
+			applied_at TEXT NOT NULL DEFAULT (datetime('now')),
+			description TEXT
+		)
+	`)
+	return err
+}
+
+// getCurrentVersion returns the highest applied migration version
+func getCurrentVersion(db *sql.DB) (int, error) {
+	var version int
+	err := db.QueryRow("SELECT COALESCE(MAX(version), 0) FROM schema_migrations").Scan(&version)
+	return version, err
+}
+
+// recordMigration records that a migration has been applied
+func recordMigration(db *sql.DB, version int, description string) error {
+	_, err := db.Exec(
+		"INSERT INTO schema_migrations (version, description) VALUES (?, ?)",
+		version, description,
+	)
+	return err
+}
+
+// GetSchemaVersion returns the current schema version (exported for health checks)
+func GetSchemaVersion(db *sql.DB) (int, error) {
+	return getCurrentVersion(db)
 }
 
 const createProjectsTable = `
@@ -153,28 +217,17 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
 `
 
-// addPersistentColumnIfNotExists adds is_persistent column only if it doesn't exist
-func addPersistentColumnIfNotExists(db *sql.DB) error {
-	// Check if column exists by querying table info
-	var count int
-	err := db.QueryRow(`
-		SELECT COUNT(*) 
-		FROM pragma_table_info('projects') 
-		WHERE name = 'is_persistent'
-	`).Scan(&count)
-	if err != nil {
-		return err
-	}
+// addPersistentColumnSQL adds is_persistent column (idempotent)
+const addPersistentColumnSQL = `
+ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0;
+`
 
-	// Column already exists, skip
-	if count > 0 {
-		return nil
-	}
+// addDeletedAtColumnSQL adds deleted_at column for soft deletes (idempotent)
+const addDeletedAtColumnSQL = `
+ALTER TABLE projects ADD COLUMN deleted_at TEXT;
+CREATE INDEX IF NOT EXISTS idx_projects_deleted_at ON projects(deleted_at);
+`
 
-	// Add the column
-	_, err = db.Exec(`ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0`)
-	return err
-}
 
 // SeedPersistentProjects creates the two persistent work projects if they don't exist
 func SeedPersistentProjects(db *sql.DB) error {
