@@ -31,7 +31,7 @@ export function useDashboard() {
   }, [dispatch]);
 
   const loadDashboardData = useCallback(
-    async (weeksBack: number = 4, weeksForward: number = 12) => {
+    async (weeksBack: number = 2, weeksForward: number = 4) => {
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "SET_ERROR", payload: null });
       try {

@@ -23,8 +23,8 @@ import type {
 } from "../../types";
 
 export function Dashboard() {
-  const [weeksBack, setWeeksBack] = useState(4)
-  const [weeksForward, setWeeksForward] = useState(12)
+  const [weeksBack, setWeeksBack] = useState(2)
+  const [weeksForward, setWeeksForward] = useState(4)
   const [isExporting, setIsExporting] = useState(false)
   
   const {
