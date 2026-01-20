@@ -66,6 +66,10 @@ export function MeetingList({ projectId }: MeetingListProps) {
     setIsModalOpen(true);
   };
 
+  const handleUpdate = (updatedMeeting: Meeting) => {
+    setViewingMeeting(updatedMeeting);
+  };
+
   const renderMeetingItem = (meeting: Meeting) => (
     <div
       className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -128,6 +132,7 @@ export function MeetingList({ projectId }: MeetingListProps) {
         onClose={handleCloseDetailModal}
         onEdit={handleEditFromDetail}
         onDelete={handleDelete}
+        onUpdate={handleUpdate}
         meeting={viewingMeeting}
       />
 

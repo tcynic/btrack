@@ -109,6 +109,13 @@ export function Dashboard() {
     setSelectedMeeting(null);
   };
 
+  const handleUpdateMeetingNotes = async (updatedMeeting: Meeting) => {
+    // Update the selected meeting with new data
+    setSelectedMeeting({ ...selectedMeeting!, ...updatedMeeting });
+    // Refresh today's meetings list
+    await loadTodayMeetings();
+  };
+
   return (
     <div>
       <DailyAgenda
@@ -226,6 +233,7 @@ export function Dashboard() {
         onClose={handleCloseDetailModal}
         onEdit={handleEditMeeting}
         onDelete={handleDeleteMeeting}
+        onUpdate={handleUpdateMeetingNotes}
         meeting={selectedMeeting}
       />
 

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import { Modal, Button } from '../ui'
 import { TaskList, TaskModal } from '../tasks'
 import { formatDate } from '../../utils'
-import { GetTasksBySource, CreateTask, UpdateTask, DeleteTask, UpdateTaskStatus } from '../../../wailsjs/go/main/App'
+import { GetTasksBySource, CreateTask, UpdateTask, DeleteTask, UpdateTaskStatus, UpdateMeeting } from '../../../wailsjs/go/main/App'
 import type { Meeting, Task, CreateTaskInput, UpdateTaskInput } from '../../types'
 
 interface MeetingDetailModalProps {
@@ -13,6 +13,7 @@ interface MeetingDetailModalProps {
   onClose: () => void
   onEdit: (meeting: Meeting) => void
   onDelete: (id: number) => void
+  onUpdate: (meeting: Meeting) => void
   meeting: Meeting | null
 }
 
@@ -21,15 +22,17 @@ export function MeetingDetailModal({
   onClose,
   onEdit,
   onDelete,
+  onUpdate,
   meeting,
 }: MeetingDetailModalProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedNotes, setEditedNotes] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
-  if (!meeting) return null
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     if (meeting) {
       try {
         const meetingTasks = await GetTasksBySource('meeting', meeting.id)
@@ -38,13 +41,18 @@ export function MeetingDetailModal({
         console.error('Failed to load tasks:', err)
       }
     }
-  }
+  }, [meeting])
 
   useEffect(() => {
     if (isOpen && meeting) {
       loadTasks()
+      setIsEditing(false)
+      setEditedNotes(meeting.notes || '')
     }
-  }, [isOpen, meeting])
+  }, [isOpen, meeting, loadTasks])
+
+  // Early return after hooks to comply with React rules
+  if (!meeting) return null
 
   const handleEdit = () => {
     onEdit(meeting)
@@ -90,6 +98,37 @@ export function MeetingDetailModal({
     await loadTasks()
   }
 
+  const handleEditNotes = () => {
+    setEditedNotes(meeting.notes || '')
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setEditedNotes(meeting.notes || '')
+    setIsEditing(false)
+  }
+
+  const handleSaveNotes = async () => {
+    setIsSaving(true)
+    try {
+      const updatedMeeting = await UpdateMeeting({
+        id: meeting.id,
+        title: meeting.title,
+        meetingDate: meeting.meetingDate,
+        durationMinutes: meeting.durationMinutes,
+        attendees: meeting.attendees,
+        notes: editedNotes,
+      })
+      onUpdate(updatedMeeting)
+      setIsEditing(false)
+    } catch (err) {
+      console.error('Failed to update meeting notes:', err)
+      alert('Failed to save notes. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={meeting.title} size="xl">
       {/* Metadata Section */}
@@ -117,16 +156,46 @@ export function MeetingDetailModal({
       </div>
 
       {/* Notes Content */}
-      <div className="prose prose-sm max-w-none mb-6">
-        {meeting.notes ? (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight]}
-          >
-            {meeting.notes}
-          </ReactMarkdown>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-700">Notes</h3>
+          {!isEditing && (
+            <Button size="sm" variant="ghost" onClick={handleEditNotes}>
+              Edit Notes
+            </Button>
+          )}
+        </div>
+        {isEditing ? (
+          <div className="space-y-3">
+            <textarea
+              value={editedNotes}
+              onChange={(e) => setEditedNotes(e.target.value)}
+              rows={12}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+              placeholder="# Meeting Notes&#10;&#10;- Discussion point 1&#10;- Discussion point 2&#10;&#10;## Action Items&#10;- [ ] Task 1"
+            />
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" onClick={handleCancelEdit} disabled={isSaving}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveNotes} disabled={isSaving}>
+                {isSaving ? 'Saving...' : 'Save Notes'}
+              </Button>
+            </div>
+          </div>
         ) : (
-          <p className="text-gray-500 italic">No notes for this meeting</p>
+          <div className="prose prose-sm max-w-none">
+            {meeting.notes ? (
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+              >
+                {meeting.notes}
+              </ReactMarkdown>
+            ) : (
+              <p className="text-gray-500 italic">No notes for this meeting</p>
+            )}
+          </div>
         )}
       </div>
 
@@ -153,7 +222,7 @@ export function MeetingDetailModal({
         <Button variant="ghost" onClick={handleDelete}>
           Delete
         </Button>
-        <Button onClick={handleEdit}>Edit Meeting</Button>
+        <Button variant="ghost" onClick={handleEdit}>Edit Details</Button>
       </div>
 
       {/* Task Modal */}
