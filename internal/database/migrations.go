@@ -40,8 +40,6 @@ func RunMigrations(db *sql.DB) error {
 		{8, "Create templates table", createTemplatesTable},
 		{9, "Create tasks table", createTasksTable},
 		{10, "Create task indexes", createTaskIndexes},
-		{11, "Add is_persistent column to projects", addPersistentColumnSQL},
-		{12, "Add deleted_at column to projects", addDeletedAtColumnSQL},
 	}
 
 	// Apply migrations that haven't been applied yet
@@ -59,6 +57,14 @@ func RunMigrations(db *sql.DB) error {
 		if err := recordMigration(db, m.Version, m.Description); err != nil {
 			return fmt.Errorf("failed to record migration %d: %w", m.Version, err)
 		}
+	}
+
+	// Apply idempotent column additions (these check for column existence)
+	if err := addPersistentColumnIfNotExists(db); err != nil {
+		return fmt.Errorf("failed to add is_persistent column: %w", err)
+	}
+	if err := addDeletedAtColumnIfNotExists(db); err != nil {
+		return fmt.Errorf("failed to add deleted_at column: %w", err)
 	}
 
 	log.Printf("Migrations complete. Schema version: %d", len(migrations))
@@ -217,16 +223,55 @@ CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
 `
 
-// addPersistentColumnSQL adds is_persistent column (idempotent)
-const addPersistentColumnSQL = `
-ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0;
-`
+// addPersistentColumnIfNotExists adds is_persistent column only if it doesn't exist
+func addPersistentColumnIfNotExists(db *sql.DB) error {
+	// Check if column exists by querying table info
+	var count int
+	err := db.QueryRow(`
+		SELECT COUNT(*) 
+		FROM pragma_table_info('projects') 
+		WHERE name = 'is_persistent'
+	`).Scan(&count)
+	if err != nil {
+		return err
+	}
 
-// addDeletedAtColumnSQL adds deleted_at column for soft deletes (idempotent)
-const addDeletedAtColumnSQL = `
-ALTER TABLE projects ADD COLUMN deleted_at TEXT;
-CREATE INDEX IF NOT EXISTS idx_projects_deleted_at ON projects(deleted_at);
-`
+	// Column already exists, skip
+	if count > 0 {
+		return nil
+	}
+
+	// Add the column
+	_, err = db.Exec(`ALTER TABLE projects ADD COLUMN is_persistent INTEGER NOT NULL DEFAULT 0`)
+	return err
+}
+
+// addDeletedAtColumnIfNotExists adds deleted_at column only if it doesn't exist
+func addDeletedAtColumnIfNotExists(db *sql.DB) error {
+	// Check if column exists by querying table info
+	var count int
+	err := db.QueryRow(`
+		SELECT COUNT(*) 
+		FROM pragma_table_info('projects') 
+		WHERE name = 'deleted_at'
+	`).Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	// Column already exists, skip
+	if count > 0 {
+		return nil
+	}
+
+	// Add the column and index
+	_, err = db.Exec(`ALTER TABLE projects ADD COLUMN deleted_at TEXT`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_projects_deleted_at ON projects(deleted_at)`)
+	return err
+}
 
 
 // SeedPersistentProjects creates the two persistent work projects if they don't exist
