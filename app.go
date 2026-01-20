@@ -7,7 +7,10 @@ import (
 
 	"btrack/internal/database"
 	"btrack/internal/repository"
+	"btrack/internal/services/notes"
 	"btrack/internal/services/project"
+	"btrack/internal/services/system"
+	"btrack/internal/services/tracking"
 )
 
 // App struct
@@ -24,7 +27,10 @@ type App struct {
 	tasks         *repository.TaskRepository
 	
 	// Services
-	projectService *project.Service
+	projectService  *project.Service
+	trackingService *tracking.Service
+	notesService    *notes.Service
+	systemService   *system.Service
 }
 
 // NewApp creates a new App application struct
@@ -56,6 +62,9 @@ func (a *App) startup(ctx context.Context) {
 	
 	// Initialize services
 	a.projectService = project.NewService(a.projects, a.weeklyEntries, db)
+	a.trackingService = tracking.NewService(a.weeklyEntries, a.projects, a.goals, db)
+	a.notesService = notes.NewService(a.meetings, a.notes, a.goals, a.tasks, db)
+	a.systemService = system.NewService(a.projectService, db, ctx)
 	
 	log.Println("Database initialized successfully")
 }

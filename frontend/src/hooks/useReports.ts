@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   GetMonthlyTrends,
   GetVarianceReport,
   GetCapacityUtilization,
 } from '../../wailsjs/go/main/App'
+import { useQuery } from './useQuery'
 
 export interface MonthlyTrend {
   month: string
@@ -31,58 +32,52 @@ export interface CapacityWeek {
 }
 
 export function useReports() {
-  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([])
-  const [varianceReport, setVarianceReport] = useState<VarianceReport[]>([])
-  const [capacityData, setCapacityData] = useState<CapacityWeek[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [monthsBack, setMonthsBack] = useState(6)
+  const [dateRange, setDateRange] = useState<{ start: string; end: string } | null>(null)
 
-  const loadMonthlyTrends = async (monthsBack: number = 6) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await GetMonthlyTrends(monthsBack)
-      setMonthlyTrends(data || [])
-    } catch (err) {
-      console.error('Failed to load monthly trends:', err)
-      setError('Failed to load monthly trends')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const monthlyTrendsQuery = useQuery<MonthlyTrend[]>({
+    queryFn: useCallback(() => GetMonthlyTrends(monthsBack), [monthsBack]),
+    initialData: [],
+    enabled: true,
+  })
 
-  const loadVarianceReport = async (startDate: string, endDate: string) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await GetVarianceReport(startDate, endDate)
-      setVarianceReport(data || [])
-    } catch (err) {
-      console.error('Failed to load variance report:', err)
-      setError('Failed to load variance report')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const varianceReportQuery = useQuery<VarianceReport[]>({
+    queryFn: useCallback(
+      () => dateRange ? GetVarianceReport(dateRange.start, dateRange.end) : Promise.resolve([]),
+      [dateRange]
+    ),
+    initialData: [],
+    enabled: !!dateRange,
+  })
 
-  const loadCapacityUtilization = async (startDate: string, endDate: string) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await GetCapacityUtilization(startDate, endDate)
-      setCapacityData(data || [])
-    } catch (err) {
-      console.error('Failed to load capacity utilization:', err)
-      setError('Failed to load capacity utilization')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const capacityQuery = useQuery<CapacityWeek[]>({
+    queryFn: useCallback(
+      () => dateRange ? GetCapacityUtilization(dateRange.start, dateRange.end) : Promise.resolve([]),
+      [dateRange]
+    ),
+    initialData: [],
+    enabled: !!dateRange,
+  })
+
+  const loadMonthlyTrends = useCallback(async (months: number = 6) => {
+    setMonthsBack(months)
+  }, [])
+
+  const loadVarianceReport = useCallback(async (startDate: string, endDate: string) => {
+    setDateRange({ start: startDate, end: endDate })
+  }, [])
+
+  const loadCapacityUtilization = useCallback(async (startDate: string, endDate: string) => {
+    setDateRange({ start: startDate, end: endDate })
+  }, [])
+
+  const isLoading = monthlyTrendsQuery.isLoading || varianceReportQuery.isLoading || capacityQuery.isLoading
+  const error = monthlyTrendsQuery.error || varianceReportQuery.error || capacityQuery.error
 
   return {
-    monthlyTrends,
-    varianceReport,
-    capacityData,
+    monthlyTrends: monthlyTrendsQuery.data || [],
+    varianceReport: varianceReportQuery.data || [],
+    capacityData: capacityQuery.data || [],
     isLoading,
     error,
     loadMonthlyTrends,

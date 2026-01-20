@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import type {
   DashboardSummary,
@@ -10,72 +10,74 @@ import {
   GetDashboardData,
   GetMeetingsByDate,
 } from "../../wailsjs/go/main/App";
+import { useQuery } from "./useQuery";
 
 export function useDashboard() {
-  const { state, dispatch } = useAppContext();
+  const { dispatch } = useAppContext();
+  const [dashboardParams, setDashboardParams] = useState({ weeksBack: 2, weeksForward: 4 });
+
+  const summaryQuery = useQuery<DashboardSummary>({
+    queryFn: GetDashboardSummary,
+    onSuccess: (data) => {
+      dispatch({ type: "SET_DASHBOARD_SUMMARY", payload: data });
+    },
+  });
+
+  const weekDataQuery = useQuery<DashboardWeekData[]>({
+    queryFn: useCallback(
+      () => GetDashboardData(dashboardParams.weeksBack, dashboardParams.weeksForward),
+      [dashboardParams]
+    ),
+    initialData: [],
+    onSuccess: (data) => {
+      dispatch({ type: "SET_DASHBOARD_WEEK_DATA", payload: data });
+    },
+  });
+
+  const todayMeetingsQuery = useQuery<MeetingWithProject[]>({
+    queryFn: useCallback(async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const meetings = await GetMeetingsByDate(today);
+      return (meetings || []) as MeetingWithProject[];
+    }, []),
+    initialData: [],
+    onSuccess: (data) => {
+      dispatch({ type: "SET_TODAY_MEETINGS", payload: data });
+    },
+  });
 
   const loadDashboardSummary = useCallback(async () => {
-    dispatch({ type: "SET_LOADING", payload: true });
-    dispatch({ type: "SET_ERROR", payload: null });
-    try {
-      const summary = await GetDashboardSummary();
-      dispatch({
-        type: "SET_DASHBOARD_SUMMARY",
-        payload: summary as DashboardSummary,
-      });
-    } catch (err) {
-      dispatch({ type: "SET_ERROR", payload: String(err) });
-    } finally {
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
-  }, [dispatch]);
+    await summaryQuery.refetch();
+  }, [summaryQuery]);
 
   const loadDashboardData = useCallback(
     async (weeksBack: number = 2, weeksForward: number = 4) => {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "SET_ERROR", payload: null });
-      try {
-        const data = await GetDashboardData(weeksBack, weeksForward);
-        dispatch({
-          type: "SET_DASHBOARD_WEEK_DATA",
-          payload: data as DashboardWeekData[],
-        });
-      } catch (err) {
-        dispatch({ type: "SET_ERROR", payload: String(err) });
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
-      }
+      setDashboardParams({ weeksBack, weeksForward });
     },
-    [dispatch],
+    []
   );
 
   const loadTodayMeetings = useCallback(async () => {
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const meetings = await GetMeetingsByDate(today);
-      dispatch({
-        type: "SET_TODAY_MEETINGS",
-        payload: (meetings || []) as MeetingWithProject[],
-      });
-    } catch (err) {
-      console.error("Failed to load today meetings:", err);
-    }
-  }, [dispatch]);
+    await todayMeetingsQuery.refetch();
+  }, [todayMeetingsQuery]);
 
   const refreshDashboard = useCallback(async () => {
     await Promise.all([
-      loadDashboardSummary(),
-      loadDashboardData(),
-      loadTodayMeetings(),
+      summaryQuery.refetch(),
+      weekDataQuery.refetch(),
+      todayMeetingsQuery.refetch(),
     ]);
-  }, [loadDashboardSummary, loadDashboardData, loadTodayMeetings]);
+  }, [summaryQuery, weekDataQuery, todayMeetingsQuery]);
+
+  const isLoading = summaryQuery.isLoading || weekDataQuery.isLoading || todayMeetingsQuery.isLoading;
+  const error = summaryQuery.error || weekDataQuery.error || todayMeetingsQuery.error;
 
   return {
-    summary: state.dashboardSummary,
-    weekData: state.dashboardWeekData,
-    todayMeetings: state.todayMeetings,
-    isLoading: state.isLoading,
-    error: state.error,
+    summary: summaryQuery.data || null,
+    weekData: weekDataQuery.data || [],
+    todayMeetings: todayMeetingsQuery.data || [],
+    isLoading,
+    error,
     loadDashboardSummary,
     loadDashboardData,
     loadTodayMeetings,

@@ -9,6 +9,7 @@ import {
   GetWeeklyEntriesByWeek,
   UpdateActualHours 
 } from '../../wailsjs/go/main/App'
+import { useQuery } from './useQuery'
 
 // Helper to get Monday of current week
 function getCurrentWeekMonday(): Date {
@@ -25,32 +26,29 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
+interface WeekData {
+  meetings: MeetingWithProject[]
+  entries: WeeklyEntryWithProject[]
+}
+
 export function useWeekView() {
   const [selectedWeek, setSelectedWeek] = useState<Date>(getCurrentWeekMonday())
-  const [meetings, setMeetings] = useState<MeetingWithProject[]>([])
-  const [entries, setEntries] = useState<WeeklyEntryWithProject[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const weekStartDate = useMemo(() => formatDate(selectedWeek), [selectedWeek])
 
-  const loadWeekData = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const [meetingsData, entriesData] = await Promise.all([
+  const weekDataQuery = useQuery<WeekData>({
+    queryFn: useCallback(async () => {
+      const [meetings, entries] = await Promise.all([
         GetMeetingsByWeek(weekStartDate),
         GetWeeklyEntriesByWeek(weekStartDate)
       ])
-      setMeetings((meetingsData || []) as MeetingWithProject[])
-      setEntries((entriesData || []) as WeeklyEntryWithProject[])
-    } catch (err) {
-      setError(String(err))
-      console.error('Failed to load week data:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [weekStartDate])
+      return {
+        meetings: (meetings || []) as MeetingWithProject[],
+        entries: (entries || []) as WeeklyEntryWithProject[],
+      }
+    }, [weekStartDate]),
+    initialData: { meetings: [], entries: [] },
+  })
 
   const navigateWeek = useCallback((direction: 'prev' | 'next') => {
     setSelectedWeek((current) => {
@@ -65,28 +63,18 @@ export function useWeekView() {
   }, [])
 
   const updateActualHours = useCallback(async (input: UpdateActualHoursInput) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      await UpdateActualHours(input)
-      // Reload the week data to get updated entry
-      await loadWeekData()
-    } catch (err) {
-      setError(String(err))
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }, [loadWeekData])
+    await UpdateActualHours(input)
+    await weekDataQuery.refetch()
+  }, [weekDataQuery])
 
   return {
     selectedWeek,
     weekStartDate,
-    meetings,
-    entries,
-    isLoading,
-    error,
-    loadWeekData,
+    meetings: weekDataQuery.data?.meetings || [],
+    entries: weekDataQuery.data?.entries || [],
+    isLoading: weekDataQuery.isLoading,
+    error: weekDataQuery.error,
+    loadWeekData: weekDataQuery.refetch,
     navigateWeek,
     goToCurrentWeek,
     updateActualHours,
