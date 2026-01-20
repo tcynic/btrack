@@ -7,6 +7,7 @@ import (
 
 	"btrack/internal/database"
 	"btrack/internal/repository"
+	"btrack/internal/services/project"
 )
 
 // App struct
@@ -21,6 +22,9 @@ type App struct {
 	notes         *repository.NoteRepository
 	goals         *repository.GoalRepository
 	tasks         *repository.TaskRepository
+	
+	// Services
+	projectService *project.Service
 }
 
 // NewApp creates a new App application struct
@@ -49,6 +53,9 @@ func (a *App) startup(ctx context.Context) {
 	a.notes = repository.NewNoteRepository(base)
 	a.goals = repository.NewGoalRepository(base)
 	a.tasks = repository.NewTaskRepository(base)
+	
+	// Initialize services
+	a.projectService = project.NewService(a.projects, a.weeklyEntries, db)
 	
 	log.Println("Database initialized successfully")
 }
