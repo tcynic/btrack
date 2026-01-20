@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 
 export interface UseQueryOptions<T> {
   queryFn: () => Promise<T>
@@ -61,10 +61,13 @@ export function useQuery<T>(options: UseQueryOptions<T>): UseQueryResult<T> {
     refetch()
   }, [refetch])
 
-  return {
-    data,
-    isLoading,
-    error,
-    refetch,
-  }
+  return useMemo(
+    () => ({
+      data,
+      isLoading,
+      error,
+      refetch,
+    }),
+    [data, isLoading, error, refetch]
+  )
 }

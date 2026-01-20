@@ -65,7 +65,7 @@ export function useWeekView() {
   const updateActualHours = useCallback(async (input: UpdateActualHoursInput) => {
     await UpdateActualHours(input)
     await weekDataQuery.refetch()
-  }, [weekDataQuery])
+  }, [weekDataQuery.refetch])
 
   return {
     selectedWeek,

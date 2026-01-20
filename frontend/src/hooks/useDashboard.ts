@@ -48,7 +48,7 @@ export function useDashboard() {
 
   const loadDashboardSummary = useCallback(async () => {
     await summaryQuery.refetch();
-  }, [summaryQuery]);
+  }, [summaryQuery.refetch]);
 
   const loadDashboardData = useCallback(
     async (weeksBack: number = 2, weeksForward: number = 4) => {
@@ -59,7 +59,7 @@ export function useDashboard() {
 
   const loadTodayMeetings = useCallback(async () => {
     await todayMeetingsQuery.refetch();
-  }, [todayMeetingsQuery]);
+  }, [todayMeetingsQuery.refetch]);
 
   const refreshDashboard = useCallback(async () => {
     await Promise.all([
@@ -67,7 +67,7 @@ export function useDashboard() {
       weekDataQuery.refetch(),
       todayMeetingsQuery.refetch(),
     ]);
-  }, [summaryQuery, weekDataQuery, todayMeetingsQuery]);
+  }, [summaryQuery.refetch, weekDataQuery.refetch, todayMeetingsQuery.refetch]);
 
   const isLoading = summaryQuery.isLoading || weekDataQuery.isLoading || todayMeetingsQuery.isLoading;
   const error = summaryQuery.error || weekDataQuery.error || todayMeetingsQuery.error;
