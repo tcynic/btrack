@@ -14,7 +14,7 @@ func (a *App) CreateTask(input models.CreateTaskInput) (*models.Task, error) {
 		return nil, err
 	}
 
-	result, err := a.db.Exec(database.InsertTask,
+	taskID, err := a.tasks.Create(
 		input.ProjectID,
 		input.SourceType,
 		input.SourceID,
@@ -24,12 +24,7 @@ func (a *App) CreateTask(input models.CreateTaskInput) (*models.Task, error) {
 		input.DueDate,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert task: %w", err)
-	}
-
-	taskID, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get task ID: %w", err)
+		return nil, err
 	}
 
 	return a.GetTask(taskID)
@@ -37,51 +32,24 @@ func (a *App) CreateTask(input models.CreateTaskInput) (*models.Task, error) {
 
 // GetTask returns a single task by ID
 func (a *App) GetTask(id int64) (*models.Task, error) {
-	row := a.db.QueryRow(database.SelectTaskByID, id)
-	t, err := models.ScanTask(row.Scan)
-	if err != nil {
-		return nil, models.NotFound("task")
-	}
-	return t, nil
+	return a.tasks.GetByID(id)
 }
 
 // GetTasksByProject returns all tasks for a project
 func (a *App) GetTasksByProject(projectID int64) ([]models.Task, error) {
-	rows, err := a.db.Query(database.SelectTasksByProject, projectID)
+	tasks, err := a.tasks.GetByProject(projectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query tasks: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var tasks []models.Task
-	for rows.Next() {
-		t, err := models.ScanTask(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan task: %w", err)
-		}
-		tasks = append(tasks, *t)
-	}
-
 	return database.EnsureSlice(tasks), nil
 }
 
 // GetTasksBySource returns tasks linked to a specific source (meeting or note)
 func (a *App) GetTasksBySource(sourceType string, sourceID int64) ([]models.Task, error) {
-	rows, err := a.db.Query(database.SelectTasksBySource, sourceType, sourceID)
+	tasks, err := a.tasks.GetBySource(sourceType, sourceID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query tasks: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var tasks []models.Task
-	for rows.Next() {
-		t, err := models.ScanTask(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan task: %w", err)
-		}
-		tasks = append(tasks, *t)
-	}
-
 	return database.EnsureSlice(tasks), nil
 }
 
@@ -138,25 +106,16 @@ func (a *App) UpdateTask(input models.UpdateTaskInput) (*models.Task, error) {
 		return nil, err
 	}
 
-	result, err := a.db.Exec(database.UpdateTask,
+	err := a.tasks.Update(
+		input.ID,
 		input.Title,
 		input.Description,
 		input.Status,
 		input.Priority,
 		input.DueDate,
-		input.ID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update task: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return nil, models.NotFound("task")
+		return nil, err
 	}
 
 	return a.GetTask(input.ID)
@@ -168,18 +127,9 @@ func (a *App) UpdateTaskStatus(id int64, status string) (*models.Task, error) {
 		return nil, models.ValidationError("status", "invalid status value")
 	}
 
-	result, err := a.db.Exec(database.UpdateTaskStatus, status, id)
+	err := a.tasks.UpdateStatus(id, status)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update task status: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return nil, models.NotFound("task")
+		return nil, err
 	}
 
 	return a.GetTask(id)
@@ -187,39 +137,15 @@ func (a *App) UpdateTaskStatus(id int64, status string) (*models.Task, error) {
 
 // DeleteTask removes a task
 func (a *App) DeleteTask(id int64) error {
-	result, err := a.db.Exec(database.DeleteTask, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete task: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return models.NotFound("task")
-	}
-
-	return nil
+	return a.tasks.Delete(id)
 }
 
 // SearchTasks searches for tasks by title or description
 func (a *App) SearchTasks(query string) ([]models.TaskWithContext, error) {
-	rows, err := a.db.Query(database.SearchTasks, query, query)
+	searchPattern := "%" + query + "%"
+	tasks, err := a.tasks.Search(searchPattern)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search tasks: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var tasks []models.TaskWithContext
-	for rows.Next() {
-		t, err := models.ScanTaskWithContext(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan task: %w", err)
-		}
-		tasks = append(tasks, *t)
-	}
-
 	return database.EnsureSlice(tasks), nil
 }

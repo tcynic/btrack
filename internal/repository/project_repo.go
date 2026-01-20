@@ -17,11 +17,19 @@ func NewProjectRepository(base *Repository) *ProjectRepository {
 
 // GetByID retrieves a single project by ID
 func (r *ProjectRepository) GetByID(id int64) (*models.Project, error) {
-	return r.QueryOne(
-		database.SelectProjectByID,
-		[]any{id},
-		models.ScanProject,
-	)
+	var project *models.Project
+	err := r.QueryOne(database.SelectProjectByID, []any{id}, func(scan func(dest ...any) error) error {
+		p, err := models.ScanProject(scan)
+		if err != nil {
+			return err
+		}
+		project = p
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return project, nil
 }
 
 // GetAll retrieves all projects, optionally filtered by active status
@@ -30,16 +38,45 @@ func (r *ProjectRepository) GetAll(activeOnly bool) ([]models.Project, error) {
 	if activeOnly {
 		query = database.SelectActiveProjects
 	}
-	return r.QuerySlice(query, nil, models.ScanProject)
+
+	var projects []models.Project
+	err := r.QuerySlice(query, nil, func(scan func(dest ...any) error) error {
+		p, err := models.ScanProject(scan)
+		if err != nil {
+			return err
+		}
+		projects = append(projects, *p)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if projects == nil {
+		projects = []models.Project{}
+	}
+	return projects, nil
 }
 
 // Search searches for projects by name
 func (r *ProjectRepository) Search(searchQuery string) ([]models.Project, error) {
-	return r.QuerySlice(
-		database.SearchProjects,
-		[]any{searchQuery},
-		models.ScanProject,
-	)
+	var projects []models.Project
+	err := r.QuerySlice(database.SearchProjects, []any{searchQuery}, func(scan func(dest ...any) error) error {
+		p, err := models.ScanProject(scan)
+		if err != nil {
+			return err
+		}
+		projects = append(projects, *p)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if projects == nil {
+		projects = []models.Project{}
+	}
+	return projects, nil
 }
 
 // Create inserts a new project and returns the ID

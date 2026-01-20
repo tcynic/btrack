@@ -39,49 +39,41 @@ func (r *Repository) WithTx(ctx context.Context, fn func(*sql.Tx) error) error {
 
 // QuerySlice executes a query and scans results into a slice using a scan function
 // Automatically handles EnsureSlice to prevent nil JSON responses
-func (r *Repository) QuerySlice[T any](
+func (r *Repository) QuerySlice(
 	query string,
 	args []any,
-	scanFn func(func(dest ...any) error) (*T, error),
-) ([]T, error) {
+	scanFn func(func(dest ...any) error) error,
+) error {
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, models.DatabaseError(err)
+		return models.DatabaseError(err)
 	}
 	defer rows.Close()
 
-	var items []T
 	for rows.Next() {
-		item, err := scanFn(rows.Scan)
-		if err != nil {
-			return nil, models.DatabaseError(err)
+		if err := scanFn(rows.Scan); err != nil {
+			return models.DatabaseError(err)
 		}
-		items = append(items, *item)
 	}
 
-	// Ensure we return empty slice instead of nil
-	if items == nil {
-		items = []T{}
-	}
-
-	return items, nil
+	return nil
 }
 
 // QueryOne executes a query and scans a single result
-func (r *Repository) QueryOne[T any](
+func (r *Repository) QueryOne(
 	query string,
 	args []any,
-	scanFn func(func(dest ...any) error) (*T, error),
-) (*T, error) {
+	scanFn func(func(dest ...any) error) error,
+) error {
 	row := r.db.QueryRow(query, args...)
-	item, err := scanFn(row.Scan)
+	err := scanFn(row.Scan)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, models.NotFound("record")
+			return models.NotFound("record")
 		}
-		return nil, models.DatabaseError(err)
+		return models.DatabaseError(err)
 	}
-	return item, nil
+	return nil
 }
 
 // Exec executes a query that doesn't return rows

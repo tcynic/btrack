@@ -13,7 +13,7 @@ func (a *App) CreateMeeting(input models.CreateMeetingInput) (*models.Meeting, e
 		return nil, err
 	}
 
-	result, err := a.db.Exec(database.InsertMeeting,
+	meetingID, err := a.meetings.Create(
 		input.ProjectID,
 		input.Title,
 		input.MeetingDate,
@@ -22,12 +22,7 @@ func (a *App) CreateMeeting(input models.CreateMeetingInput) (*models.Meeting, e
 		input.Notes,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to insert meeting: %w", err)
-	}
-
-	meetingID, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get meeting ID: %w", err)
+		return nil, err
 	}
 
 	return a.GetMeeting(meetingID)
@@ -35,32 +30,16 @@ func (a *App) CreateMeeting(input models.CreateMeetingInput) (*models.Meeting, e
 
 // GetMeetings returns all meetings for a project
 func (a *App) GetMeetings(projectID int64) ([]models.Meeting, error) {
-	rows, err := a.db.Query(database.SelectMeetingsByProject, projectID)
+	meetings, err := a.meetings.GetByProject(projectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query meetings: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var meetings []models.Meeting
-	for rows.Next() {
-		m, err := models.ScanMeeting(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan meeting: %w", err)
-		}
-		meetings = append(meetings, *m)
-	}
-
 	return database.EnsureSlice(meetings), nil
 }
 
 // GetMeeting returns a single meeting by ID
 func (a *App) GetMeeting(id int64) (*models.Meeting, error) {
-	row := a.db.QueryRow(database.SelectMeetingByID, id)
-	m, err := models.ScanMeeting(row.Scan)
-	if err != nil {
-		return nil, models.NotFound("meeting")
-	}
-	return m, nil
+	return a.meetings.GetByID(id)
 }
 
 // UpdateMeeting updates an existing meeting
@@ -69,25 +48,16 @@ func (a *App) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meeting, e
 		return nil, err
 	}
 
-	result, err := a.db.Exec(database.UpdateMeeting,
+	err := a.meetings.Update(
+		input.ID,
 		input.Title,
 		input.MeetingDate,
 		input.DurationMinutes,
 		input.Attendees,
 		input.Notes,
-		input.ID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update meeting: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return nil, models.NotFound("meeting")
+		return nil, err
 	}
 
 	return a.GetMeeting(input.ID)
@@ -96,26 +66,11 @@ func (a *App) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meeting, e
 // DeleteMeeting removes a meeting
 func (a *App) DeleteMeeting(id int64) error {
 	// First delete associated tasks
-	_, err := a.db.Exec(database.DeleteTasksBySource, "meeting", id)
-	if err != nil {
-		return fmt.Errorf("failed to delete associated tasks: %w", err)
+	if err := a.tasks.DeleteBySource("meeting", id); err != nil {
+		return err
 	}
 
-	result, err := a.db.Exec(database.DeleteMeeting, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete meeting: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return models.NotFound("meeting")
-	}
-
-	return nil
+	return a.meetings.Delete(id)
 }
 
 // GetMeetingsByDate returns all meetings for a specific date across all projects
@@ -167,20 +122,10 @@ func (a *App) GetMeetingsByWeek(weekStartDate string) ([]models.MeetingWithProje
 
 // SearchMeetings searches for meetings by title, notes, or attendees
 func (a *App) SearchMeetings(query string) ([]models.MeetingWithProject, error) {
-	rows, err := a.db.Query(database.SearchMeetings, query, query, query)
+	searchPattern := "%" + query + "%"
+	meetings, err := a.meetings.Search(searchPattern)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search meetings: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var meetings []models.MeetingWithProject
-	for rows.Next() {
-		m, err := models.ScanMeetingWithProject(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan meeting: %w", err)
-		}
-		meetings = append(meetings, *m)
-	}
-
 	return database.EnsureSlice(meetings), nil
 }
