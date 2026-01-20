@@ -11,128 +11,17 @@ import (
 
 // CreateProject creates a new project and generates weekly entries based on frontloading
 func (a *App) CreateProject(input models.CreateProjectInput) (*models.ProjectWithStats, error) {
-	if err := input.Validate(); err != nil {
-		return nil, err
-	}
-
-	// Calculate the weekly distribution
-	entries, err := a.CalculateDistribution(input)
-	if err != nil {
-		return nil, fmt.Errorf("failed to calculate distribution: %w", err)
-	}
-
-	// Start transaction
-	tx, err := a.db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer tx.Rollback()
-
-	// Insert project
-	result, err := tx.Exec(database.InsertProject,
-		input.Name,
-		input.TotalSoldHours,
-		input.SpecialistHours,
-		input.StartDate,
-		input.EndDate,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert project: %w", err)
-	}
-
-	projectID, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get project ID: %w", err)
-	}
-
-	// Insert weekly entries
-	for _, entry := range entries {
-		_, err := tx.Exec(database.InsertWeeklyEntry,
-			projectID,
-			entry.WeekStartDate,
-			entry.WeekNumber,
-			entry.PlannedHours,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert weekly entry: %w", err)
-		}
-	}
-
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	// Return the created project with stats
-	return a.GetProject(projectID)
+	return a.projectService.Create(a.ctx, input)
 }
 
 // GetAllProjects returns all projects, optionally filtered by active status
 func (a *App) GetAllProjects(activeOnly bool) ([]models.ProjectWithStats, error) {
-	query := database.SelectAllProjects
-	if activeOnly {
-		query = database.SelectActiveProjects
-	}
-
-	rows, err := a.db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query projects: %w", err)
-	}
-	defer rows.Close()
-
-	var projects []models.ProjectWithStats
-	for rows.Next() {
-		p, err := models.ScanProject(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan project: %w", err)
-		}
-
-		// Get stats for this project
-		stats, err := a.getProjectStats(p.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get project stats: %w", err)
-		}
-
-		projectWithStats := models.ProjectWithStats{
-			Project:           *p,
-			MyHours:           p.TotalSoldHours - p.SpecialistHours,
-			TotalWeeks:        stats.TotalWeeks,
-			TotalPlannedHours: stats.TotalPlanned,
-			TotalActualHours:  stats.TotalActual,
-		}
-		projectWithStats.Health = calculateProjectHealth(projectWithStats)
-		projects = append(projects, projectWithStats)
-	}
-
-	if projects == nil {
-		projects = []models.ProjectWithStats{}
-	}
-
-	return projects, nil
+	return a.projectService.GetAll(a.ctx, activeOnly)
 }
 
 // GetProject returns a single project by ID with stats
 func (a *App) GetProject(id int64) (*models.ProjectWithStats, error) {
-	row := a.db.QueryRow(database.SelectProjectByID, id)
-	p, err := models.ScanProject(row.Scan)
-	if err != nil {
-		return nil, models.NotFound("project")
-	}
-
-	stats, err := a.getProjectStats(p.ID)
-	if err != nil {
-		return nil, models.Internal(err, "failed to get project stats")
-	}
-
-	projectWithStats := &models.ProjectWithStats{
-		Project:           *p,
-		MyHours:           p.TotalSoldHours - p.SpecialistHours,
-		TotalWeeks:        stats.TotalWeeks,
-		TotalPlannedHours: stats.TotalPlanned,
-		TotalActualHours:  stats.TotalActual,
-	}
-	projectWithStats.Health = calculateProjectHealth(*projectWithStats)
-	return projectWithStats, nil
+	return a.projectService.GetByID(a.ctx, id)
 }
 
 // UpdateProject updates project details and recalculates weekly entries if needed
@@ -427,40 +316,28 @@ type projectStats struct {
 
 // SearchProjects searches for projects by name
 func (a *App) SearchProjects(query string) ([]models.ProjectWithStats, error) {
-	rows, err := a.db.Query(database.SearchProjects, query)
+	// Get basic projects from service
+	projects, err := a.projectService.Search(a.ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search projects: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
-	var projects []models.ProjectWithStats
-	for rows.Next() {
-		p, err := models.ScanProject(rows.Scan)
+	// Convert to ProjectWithStats
+	var result []models.ProjectWithStats
+	for _, p := range projects {
+		// Get full project with stats
+		ps, err := a.GetProject(p.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan project: %w", err)
+			continue // Skip projects we can't fetch
 		}
-
-		stats, err := a.getProjectStats(p.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get project stats: %w", err)
-		}
-
-		projectWithStats := models.ProjectWithStats{
-			Project:           *p,
-			MyHours:           p.TotalSoldHours - p.SpecialistHours,
-			TotalWeeks:        stats.TotalWeeks,
-			TotalPlannedHours: stats.TotalPlanned,
-			TotalActualHours:  stats.TotalActual,
-		}
-		projectWithStats.Health = calculateProjectHealth(projectWithStats)
-		projects = append(projects, projectWithStats)
+		result = append(result, *ps)
 	}
 
-	if projects == nil {
-		projects = []models.ProjectWithStats{}
+	if result == nil {
+		result = []models.ProjectWithStats{}
 	}
 
-	return projects, nil
+	return result, nil
 }
 
 // calculateProjectHealth determines the health status of a project
