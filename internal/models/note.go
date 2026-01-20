@@ -1,19 +1,17 @@
 package models
 
 import (
-	"time"
-
 	"btrack/internal/database"
 )
 
 // Note represents a project note with markdown content
 type Note struct {
-	ID        int64     `json:"id"`
-	ProjectID int64     `json:"projectId"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID        int64  `json:"id"`
+	ProjectID int64  `json:"projectId"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // NoteWithProject includes the parent project name for search results
@@ -42,8 +40,8 @@ func ScanNote(scan func(dest ...any) error) (*Note, error) {
 	}
 
 	n.Content = database.NullableString(content)
-	n.CreatedAt = database.ParseTimestamp(createdAt)
-	n.UpdatedAt = database.ParseTimestamp(updatedAt)
+	n.CreatedAt = createdAt
+	n.UpdatedAt = updatedAt
 
 	return &n, nil
 }
@@ -69,8 +67,8 @@ func ScanNoteWithProject(scan func(dest ...any) error) (*NoteWithProject, error)
 	}
 
 	n.Content = database.NullableString(content)
-	n.CreatedAt = database.ParseTimestamp(createdAt)
-	n.UpdatedAt = database.ParseTimestamp(updatedAt)
+	n.CreatedAt = createdAt
+	n.UpdatedAt = updatedAt
 
 	return &n, nil
 }

@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"btrack/internal/database"
 )
 
@@ -30,17 +28,17 @@ const (
 
 // Task represents a task/action item
 type Task struct {
-	ID          int64     `json:"id"`
-	ProjectID   int64     `json:"projectId"`
-	SourceType  string    `json:"sourceType"`
-	SourceID    *int64    `json:"sourceId"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	Priority    string    `json:"priority"`
-	DueDate     string    `json:"dueDate"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          int64  `json:"id"`
+	ProjectID   int64  `json:"projectId"`
+	SourceType  string `json:"sourceType"`
+	SourceID    *int64 `json:"sourceId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	Priority    string `json:"priority"`
+	DueDate     string `json:"dueDate"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
 }
 
 // TaskWithContext extends Task with project name and source title
@@ -78,8 +76,8 @@ func ScanTask(scan func(dest ...any) error) (*Task, error) {
 	t.SourceID = sourceID
 	t.Description = database.NullableString(description)
 	t.DueDate = database.NullableString(dueDate)
-	t.CreatedAt = database.ParseTimestamp(createdAt)
-	t.UpdatedAt = database.ParseTimestamp(updatedAt)
+	t.CreatedAt = createdAt
+	t.UpdatedAt = updatedAt
 
 	return &t, nil
 }
@@ -115,8 +113,8 @@ func ScanTaskWithContext(scan func(dest ...any) error) (*TaskWithContext, error)
 	t.Description = database.NullableString(description)
 	t.DueDate = database.NullableString(dueDate)
 	t.SourceTitle = database.NullableString(sourceTitle)
-	t.CreatedAt = database.ParseTimestamp(createdAt)
-	t.UpdatedAt = database.ParseTimestamp(updatedAt)
+	t.CreatedAt = createdAt
+	t.UpdatedAt = updatedAt
 
 	return &t, nil
 }

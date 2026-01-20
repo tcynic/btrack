@@ -1,210 +1,3 @@
-export namespace main {
-	
-	export class BackupInfo {
-	    databasePath: string;
-	    databaseSize: number;
-	    lastModified: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new BackupInfo(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.databasePath = source["databasePath"];
-	        this.databaseSize = source["databaseSize"];
-	        this.lastModified = source["lastModified"];
-	    }
-	}
-	export class CapacityWeek {
-	    weekStart: string;
-	    plannedHours: number;
-	    actualHours: number;
-	    utilization: number;
-	    projectCount: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new CapacityWeek(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.weekStart = source["weekStart"];
-	        this.plannedHours = source["plannedHours"];
-	        this.actualHours = source["actualHours"];
-	        this.utilization = source["utilization"];
-	        this.projectCount = source["projectCount"];
-	    }
-	}
-	export class CreateProjectFromTemplateInput {
-	    templateId: number;
-	    name: string;
-	    startDate: string;
-	    endDate: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new CreateProjectFromTemplateInput(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.templateId = source["templateId"];
-	        this.name = source["name"];
-	        this.startDate = source["startDate"];
-	        this.endDate = source["endDate"];
-	    }
-	}
-	export class DashboardSummary {
-	    totalActiveProjects: number;
-	    atRiskProjects: number;
-	    totalPlannedThisWeek: number;
-	    totalActualThisWeek: number;
-	    totalPlannedNextWeek: number;
-	    totalGoals: number;
-	    completedGoals: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new DashboardSummary(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.totalActiveProjects = source["totalActiveProjects"];
-	        this.atRiskProjects = source["atRiskProjects"];
-	        this.totalPlannedThisWeek = source["totalPlannedThisWeek"];
-	        this.totalActualThisWeek = source["totalActualThisWeek"];
-	        this.totalPlannedNextWeek = source["totalPlannedNextWeek"];
-	        this.totalGoals = source["totalGoals"];
-	        this.completedGoals = source["completedGoals"];
-	    }
-	}
-	export class DashboardWeekData {
-	    weekStartDate: string;
-	    totalPlannedHours: number;
-	    totalActualHours: number;
-	    projectCount: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new DashboardWeekData(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.weekStartDate = source["weekStartDate"];
-	        this.totalPlannedHours = source["totalPlannedHours"];
-	        this.totalActualHours = source["totalActualHours"];
-	        this.projectCount = source["projectCount"];
-	    }
-	}
-	export class GoalStats {
-	    total: number;
-	    pending: number;
-	    inProgress: number;
-	    completed: number;
-	    cancelled: number;
-	    completionRate: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new GoalStats(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.total = source["total"];
-	        this.pending = source["pending"];
-	        this.inProgress = source["inProgress"];
-	        this.completed = source["completed"];
-	        this.cancelled = source["cancelled"];
-	        this.completionRate = source["completionRate"];
-	    }
-	}
-	export class MonthlyTrend {
-	    month: string;
-	    plannedHours: number;
-	    actualHours: number;
-	    projectCount: number;
-	    variance: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new MonthlyTrend(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.month = source["month"];
-	        this.plannedHours = source["plannedHours"];
-	        this.actualHours = source["actualHours"];
-	        this.projectCount = source["projectCount"];
-	        this.variance = source["variance"];
-	    }
-	}
-	export class ProjectTemplate {
-	    id: number;
-	    name: string;
-	    totalSoldHours: number;
-	    specialistHours: number;
-	    // Go type: time
-	    createdAt: any;
-	    // Go type: time
-	    updatedAt: any;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProjectTemplate(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.name = source["name"];
-	        this.totalSoldHours = source["totalSoldHours"];
-	        this.specialistHours = source["specialistHours"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class VarianceReport {
-	    projectId: number;
-	    projectName: string;
-	    planned: number;
-	    actual: number;
-	    variance: number;
-	    percentage: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new VarianceReport(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.projectId = source["projectId"];
-	        this.projectName = source["projectName"];
-	        this.planned = source["planned"];
-	        this.actual = source["actual"];
-	        this.variance = source["variance"];
-	        this.percentage = source["percentage"];
-	    }
-	}
-
-}
-
 export namespace models {
 	
 	export class CreateGoalInput {
@@ -1038,6 +831,223 @@ export namespace models {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace notes {
+	
+	export class GoalStats {
+	    total: number;
+	    pending: number;
+	    inProgress: number;
+	    completed: number;
+	    cancelled: number;
+	    completionRate: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoalStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total = source["total"];
+	        this.pending = source["pending"];
+	        this.inProgress = source["inProgress"];
+	        this.completed = source["completed"];
+	        this.cancelled = source["cancelled"];
+	        this.completionRate = source["completionRate"];
+	    }
+	}
+
+}
+
+export namespace system {
+	
+	export class BackupInfo {
+	    databasePath: string;
+	    databaseSize: number;
+	    lastModified: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.databasePath = source["databasePath"];
+	        this.databaseSize = source["databaseSize"];
+	        this.lastModified = source["lastModified"];
+	    }
+	}
+	export class CreateProjectFromTemplateInput {
+	    templateId: number;
+	    name: string;
+	    startDate: string;
+	    endDate: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateProjectFromTemplateInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.templateId = source["templateId"];
+	        this.name = source["name"];
+	        this.startDate = source["startDate"];
+	        this.endDate = source["endDate"];
+	    }
+	}
+	export class ProjectTemplate {
+	    id: number;
+	    name: string;
+	    totalSoldHours: number;
+	    specialistHours: number;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProjectTemplate(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.totalSoldHours = source["totalSoldHours"];
+	        this.specialistHours = source["specialistHours"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace tracking {
+	
+	export class CapacityWeek {
+	    weekStart: string;
+	    plannedHours: number;
+	    actualHours: number;
+	    utilization: number;
+	    projectCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new CapacityWeek(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.weekStart = source["weekStart"];
+	        this.plannedHours = source["plannedHours"];
+	        this.actualHours = source["actualHours"];
+	        this.utilization = source["utilization"];
+	        this.projectCount = source["projectCount"];
+	    }
+	}
+	export class DashboardSummary {
+	    totalActiveProjects: number;
+	    atRiskProjects: number;
+	    totalPlannedThisWeek: number;
+	    totalActualThisWeek: number;
+	    totalPlannedNextWeek: number;
+	    totalGoals: number;
+	    completedGoals: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DashboardSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.totalActiveProjects = source["totalActiveProjects"];
+	        this.atRiskProjects = source["atRiskProjects"];
+	        this.totalPlannedThisWeek = source["totalPlannedThisWeek"];
+	        this.totalActualThisWeek = source["totalActualThisWeek"];
+	        this.totalPlannedNextWeek = source["totalPlannedNextWeek"];
+	        this.totalGoals = source["totalGoals"];
+	        this.completedGoals = source["completedGoals"];
+	    }
+	}
+	export class DashboardWeekData {
+	    weekStartDate: string;
+	    totalPlannedHours: number;
+	    totalActualHours: number;
+	    projectCount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DashboardWeekData(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.weekStartDate = source["weekStartDate"];
+	        this.totalPlannedHours = source["totalPlannedHours"];
+	        this.totalActualHours = source["totalActualHours"];
+	        this.projectCount = source["projectCount"];
+	    }
+	}
+	export class MonthlyTrend {
+	    month: string;
+	    plannedHours: number;
+	    actualHours: number;
+	    projectCount: number;
+	    variance: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new MonthlyTrend(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.month = source["month"];
+	        this.plannedHours = source["plannedHours"];
+	        this.actualHours = source["actualHours"];
+	        this.projectCount = source["projectCount"];
+	        this.variance = source["variance"];
+	    }
+	}
+	export class VarianceReport {
+	    projectId: number;
+	    projectName: string;
+	    planned: number;
+	    actual: number;
+	    variance: number;
+	    percentage: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new VarianceReport(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.projectId = source["projectId"];
+	        this.projectName = source["projectName"];
+	        this.planned = source["planned"];
+	        this.actual = source["actual"];
+	        this.variance = source["variance"];
+	        this.percentage = source["percentage"];
+	    }
 	}
 
 }

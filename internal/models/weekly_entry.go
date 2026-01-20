@@ -1,21 +1,15 @@
 package models
 
-import (
-	"time"
-
-	"btrack/internal/database"
-)
-
 // WeeklyEntry represents planned and actual hours for a specific week
 type WeeklyEntry struct {
-	ID            int64     `json:"id"`
-	ProjectID     int64     `json:"projectId"`
-	WeekStartDate string    `json:"weekStartDate"`
-	WeekNumber    int       `json:"weekNumber"`
-	PlannedHours  int       `json:"plannedHours"`
-	ActualHours   int       `json:"actualHours"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	ID            int64  `json:"id"`
+	ProjectID     int64  `json:"projectId"`
+	WeekStartDate string `json:"weekStartDate"`
+	WeekNumber    int    `json:"weekNumber"`
+	PlannedHours  int    `json:"plannedHours"`
+	ActualHours   int    `json:"actualHours"`
+	CreatedAt     string `json:"createdAt"`
+	UpdatedAt     string `json:"updatedAt"`
 }
 
 // WeeklyEntryWithStatus includes computed status information
@@ -58,8 +52,8 @@ func ScanWeeklyEntry(scan func(dest ...any) error) (*WeeklyEntry, error) {
 		return nil, err
 	}
 
-	e.CreatedAt = database.ParseTimestamp(createdAt)
-	e.UpdatedAt = database.ParseTimestamp(updatedAt)
+	e.CreatedAt = createdAt
+	e.UpdatedAt = updatedAt
 
 	return &e, nil
 }
@@ -85,8 +79,8 @@ func ScanWeeklyEntryWithProject(scan func(dest ...any) error, isPastWeek bool) (
 		return nil, err
 	}
 
-	e.CreatedAt = database.ParseTimestamp(createdAt)
-	e.UpdatedAt = database.ParseTimestamp(updatedAt)
+	e.CreatedAt = createdAt
+	e.UpdatedAt = updatedAt
 	e.IsPastWeek = isPastWeek
 	e.CalculateStatus()
 

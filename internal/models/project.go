@@ -1,23 +1,17 @@
 package models
 
-import (
-	"time"
-
-	"btrack/internal/database"
-)
-
 // Project represents a client project with sold hours
 type Project struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	TotalSoldHours  int       `json:"totalSoldHours"`
-	SpecialistHours int       `json:"specialistHours"`
-	StartDate       string    `json:"startDate"`
-	EndDate         string    `json:"endDate"`
-	IsActive        bool      `json:"isActive"`
-	IsPersistent    bool      `json:"isPersistent"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ID              int64  `json:"id"`
+	Name            string `json:"name"`
+	TotalSoldHours  int    `json:"totalSoldHours"`
+	SpecialistHours int    `json:"specialistHours"`
+	StartDate       string `json:"startDate"`
+	EndDate         string `json:"endDate"`
+	IsActive        bool   `json:"isActive"`
+	IsPersistent    bool   `json:"isPersistent"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
 }
 
 // HealthStatus represents the health state of a project
@@ -92,8 +86,8 @@ func ScanProject(scan func(dest ...any) error) (*Project, error) {
 
 	p.IsActive = isActive == 1
 	p.IsPersistent = isPersistent == 1
-	p.CreatedAt = database.ParseTimestamp(createdAt)
-	p.UpdatedAt = database.ParseTimestamp(updatedAt)
+	p.CreatedAt = createdAt
+	p.UpdatedAt = updatedAt
 
 	return &p, nil
 }

@@ -1,22 +1,20 @@
 package models
 
 import (
-	"time"
-
 	"btrack/internal/database"
 )
 
 // Meeting represents a project meeting
 type Meeting struct {
-	ID              int64     `json:"id"`
-	ProjectID       int64     `json:"projectId"`
-	Title           string    `json:"title"`
-	MeetingDate     string    `json:"meetingDate"`
-	DurationMinutes int       `json:"durationMinutes"`
-	Attendees       string    `json:"attendees"`
-	Notes           string    `json:"notes"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ID              int64  `json:"id"`
+	ProjectID       int64  `json:"projectId"`
+	Title           string `json:"title"`
+	MeetingDate     string `json:"meetingDate"`
+	DurationMinutes int    `json:"durationMinutes"`
+	Attendees       string `json:"attendees"`
+	Notes           string `json:"notes"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
 }
 
 // ScanMeeting scans a database row into a Meeting struct.
@@ -43,8 +41,8 @@ func ScanMeeting(scan func(dest ...any) error) (*Meeting, error) {
 
 	m.Attendees = database.NullableString(attendees)
 	m.Notes = database.NullableString(notes)
-	m.CreatedAt = database.ParseTimestamp(createdAt)
-	m.UpdatedAt = database.ParseTimestamp(updatedAt)
+	m.CreatedAt = createdAt
+	m.UpdatedAt = updatedAt
 
 	return &m, nil
 }
@@ -74,8 +72,8 @@ func ScanMeetingWithProject(scan func(dest ...any) error) (*MeetingWithProject, 
 
 	m.Attendees = database.NullableString(attendees)
 	m.Notes = database.NullableString(notes)
-	m.CreatedAt = database.ParseTimestamp(createdAt)
-	m.UpdatedAt = database.ParseTimestamp(updatedAt)
+	m.CreatedAt = createdAt
+	m.UpdatedAt = updatedAt
 
 	return &m, nil
 }

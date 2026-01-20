@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"btrack/internal/database"
 )
 
@@ -16,14 +14,14 @@ const (
 
 // Goal represents a project goal
 type Goal struct {
-	ID          int64     `json:"id"`
-	ProjectID   int64     `json:"projectId"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	TargetDate  string    `json:"targetDate"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID          int64  `json:"id"`
+	ProjectID   int64  `json:"projectId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	TargetDate  string `json:"targetDate"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
 }
 
 // GoalWithProject includes the parent project name for search results
@@ -55,8 +53,8 @@ func ScanGoal(scan func(dest ...any) error) (*Goal, error) {
 
 	g.Description = database.NullableString(description)
 	g.TargetDate = database.NullableString(targetDate)
-	g.CreatedAt = database.ParseTimestamp(createdAt)
-	g.UpdatedAt = database.ParseTimestamp(updatedAt)
+	g.CreatedAt = createdAt
+	g.UpdatedAt = updatedAt
 
 	return &g, nil
 }
@@ -85,8 +83,8 @@ func ScanGoalWithProject(scan func(dest ...any) error) (*GoalWithProject, error)
 
 	g.Description = database.NullableString(description)
 	g.TargetDate = database.NullableString(targetDate)
-	g.CreatedAt = database.ParseTimestamp(createdAt)
-	g.UpdatedAt = database.ParseTimestamp(updatedAt)
+	g.CreatedAt = createdAt
+	g.UpdatedAt = updatedAt
 
 	return &g, nil
 }
