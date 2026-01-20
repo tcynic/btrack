@@ -5,13 +5,6 @@ import (
 	"time"
 )
 
-// ParseTimestamp parses a SQLite timestamp string into a time.Time.
-// Returns zero time if parsing fails.
-func ParseTimestamp(s string) time.Time {
-	t, _ := time.Parse("2006-01-02 15:04:05", s)
-	return t
-}
-
 // ParseDate parses a date string (YYYY-MM-DD) into a time.Time.
 // Returns an error if parsing fails.
 func ParseDate(s string) (time.Time, error) {
