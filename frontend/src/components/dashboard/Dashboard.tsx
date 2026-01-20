@@ -24,7 +24,7 @@ import type {
 
 export function Dashboard() {
   const [weeksBack, setWeeksBack] = useState(2)
-  const [weeksForward, setWeeksForward] = useState(4)
+  const [weeksForward, setWeeksForward] = useState(3)
   const [isExporting, setIsExporting] = useState(false)
   
   const {

@@ -14,7 +14,7 @@ import { useQuery } from "./useQuery";
 
 export function useDashboard() {
   const { dispatch } = useAppContext();
-  const [dashboardParams, setDashboardParams] = useState({ weeksBack: 2, weeksForward: 4 });
+  const [dashboardParams, setDashboardParams] = useState({ weeksBack: 2, weeksForward: 3 });
 
   const summaryQuery = useQuery<DashboardSummary>({
     queryFn: GetDashboardSummary,
@@ -51,7 +51,7 @@ export function useDashboard() {
   }, [summaryQuery.refetch]);
 
   const loadDashboardData = useCallback(
-    async (weeksBack: number = 2, weeksForward: number = 4) => {
+    async (weeksBack: number = 2, weeksForward: number = 3) => {
       setDashboardParams({ weeksBack, weeksForward });
     },
     []
