@@ -174,15 +174,35 @@ func (s *Service) ensurePersistentEntries(weekStartDate string) error {
 		projectIDs = append(projectIDs, id)
 	}
 
-	// For each persistent project, insert entry if it doesn't exist
+	// No projects to insert, return early
+	if len(projectIDs) == 0 {
+		return nil
+	}
+
+	// Batch insert all entries in a single transaction
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(`
+		INSERT OR IGNORE INTO weekly_entries (project_id, week_start_date, week_number, planned_hours, actual_hours)
+		VALUES (?, ?, 0, 0, 0)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
 	for _, projectID := range projectIDs {
-		_, err := s.db.Exec(`
-			INSERT OR IGNORE INTO weekly_entries (project_id, week_start_date, week_number, planned_hours, actual_hours)
-			VALUES (?, ?, 0, 0, 0)
-		`, projectID, weekStartDate)
-		if err != nil {
+		if _, err := stmt.Exec(projectID, weekStartDate); err != nil {
 			return fmt.Errorf("failed to insert persistent entry: %w", err)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

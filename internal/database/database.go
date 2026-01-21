@@ -24,9 +24,28 @@ func Initialize() (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// Configure connection pool
+	db.SetMaxOpenConns(1) // SQLite works best with single writer
+	db.SetMaxIdleConns(1)
+
 	// Enable foreign keys
 	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
 		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
+	}
+
+	// Enable WAL mode for better concurrent access
+	if _, err := db.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		return nil, fmt.Errorf("failed to enable WAL mode: %w", err)
+	}
+
+	// Set busy timeout to handle lock contention
+	if _, err := db.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		return nil, fmt.Errorf("failed to set busy timeout: %w", err)
+	}
+
+	// Optimize synchronous mode for desktop use (faster writes, still safe)
+	if _, err := db.Exec("PRAGMA synchronous = NORMAL"); err != nil {
+		return nil, fmt.Errorf("failed to set synchronous mode: %w", err)
 	}
 
 	// Run migrations
