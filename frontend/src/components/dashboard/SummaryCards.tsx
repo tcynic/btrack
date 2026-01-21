@@ -8,8 +8,8 @@ interface SummaryCardsProps {
 export function SummaryCards({ summary }: SummaryCardsProps) {
   if (!summary) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        {[1, 2, 3, 4, 5].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i} className="animate-pulse">
             <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
             <div className="h-8 bg-gray-200 rounded w-16"></div>
@@ -92,7 +92,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
       {cards.map((card) => (
         <Card key={card.label}>
           <div className="flex items-center">
