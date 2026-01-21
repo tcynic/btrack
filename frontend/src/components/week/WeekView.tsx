@@ -60,11 +60,11 @@ export function WeekView() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Week View</h2>
-            <p className="text-gray-500 mt-1">
+            <h2 className="text-2xl font-bold text-ld-text">Week View</h2>
+            <p className="text-ld-muted mt-1">
               {weekRange}
               {isCurrent && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                <span className="ml-2 px-2 py-0.5 text-xs border border-ld-primary text-ld-primary bg-transparent rounded-full">
                   Current Week
                 </span>
               )}
@@ -135,7 +135,7 @@ export function WeekView() {
           />
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ld-primary"></div>
             </div>
           ) : (
             <WeekMeetingList meetings={meetings} weekStartDate={weekStartDate} />
@@ -149,7 +149,7 @@ export function WeekView() {
               title="Hours"
               subtitle="Track your hours across projects"
             />
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-ld-muted mt-2">
               {isCurrent || entries.some(e => e.isPastWeek)
                 ? 'Click actual hours to edit'
                 : 'Future weeks cannot be edited'}
@@ -157,7 +157,7 @@ export function WeekView() {
           </div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ld-primary"></div>
             </div>
           ) : (
             <WeekHoursTable

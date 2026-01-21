@@ -1,4 +1,5 @@
 @import "highlight.js/styles/github.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,11 +13,44 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    /* LaunchDarkly light theme tokens */
+    --ld-bg: #F9F9F9;
+    --ld-surface: #FFFFFF;
+    --ld-surface-2: #F3F4F6; /* subtle alt surface */
+    --ld-border: #E5E7EB;
+    --ld-text: #111111;
+    --ld-text-muted: #6D6E71;
+
+    --ld-primary: #405BFF;
+
+    --ld-cyan: #3DD6F5;
+    --ld-blue: #405BFF;
+    --ld-powder: #7084FF;
+    --ld-purple: #A34FDE;
+    --ld-pink: #FF35A2;
+    --ld-orange: #FF9D29;
+    --ld-yellow: #EBFF38;
+    --ld-green: #A9FF5E;
+}
+
+.dark {
+    /* LaunchDarkly dark theme tokens */
+    --ld-bg: #191919;
+    --ld-surface: #282828;
+    --ld-surface-2: #2C2C2C;
+    --ld-border: #414042;
+    --ld-text: #FFFFFF;
+    --ld-text-muted: #A7A9AC;
+
+    --ld-primary: #7084FF; /* slightly brighter primary on dark */
 }
 
 body {
     margin: 0;
     min-height: 100vh;
+    background-color: var(--ld-bg);
+    color: var(--ld-text);
 }
 
 #root {

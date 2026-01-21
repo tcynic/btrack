@@ -80,8 +80,8 @@ export function TasksView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-ld-text">Tasks</h1>
+          <p className="text-sm text-ld-muted mt-1">
             Manage tasks across all projects
           </p>
         </div>
@@ -89,16 +89,16 @@ export function TasksView() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-ld-surface rounded-lg border border-ld-border p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-ld-text mb-1">
               Status
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-ld-border bg-ld-surface text-ld-text rounded-lg focus:outline-none focus:ring-2 focus:ring-ld-primary"
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
@@ -109,13 +109,13 @@ export function TasksView() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-ld-text mb-1">
               Project
             </label>
             <select
               value={projectFilter}
               onChange={(e) => setProjectFilter(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-ld-border bg-ld-surface text-ld-text rounded-lg focus:outline-none focus:ring-2 focus:ring-ld-primary"
             >
               <option value="0">All Projects</option>
               {activeProjects.map((project) => (
@@ -132,7 +132,7 @@ export function TasksView() {
                 setStatusFilter('')
                 setProjectFilter(0)
               }}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm text-ld-primary hover:brightness-110 font-medium"
             >
               Clear Filters
             </button>
@@ -143,7 +143,7 @@ export function TasksView() {
       {/* Task List */}
       <div>
         {isLoading ? (
-          <div className="text-center py-12 text-gray-500">Loading tasks...</div>
+          <div className="text-center py-12 text-ld-muted">Loading tasks...</div>
         ) : (
           <TaskList
             tasks={tasks}

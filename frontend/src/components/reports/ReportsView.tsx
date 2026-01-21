@@ -41,11 +41,11 @@ export function ReportsView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+        <h1 className="text-2xl font-bold text-ld-text">Reports & Analytics</h1>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="p-4 bg-transparent border border-[var(--ld-pink)] rounded-lg text-[var(--ld-pink)]">
           {error}
         </div>
       )}
@@ -53,13 +53,13 @@ export function ReportsView() {
       {/* Monthly Trends */}
       <Card>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Monthly Trends</h2>
+          <h2 className="text-lg font-semibold text-ld-text">Monthly Trends</h2>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Months:</label>
+            <label className="text-sm text-ld-muted">Months:</label>
             <select
               value={monthsBack}
               onChange={(e) => setMonthsBack(parseInt(e.target.value))}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1 border border-ld-border bg-ld-surface text-ld-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ld-primary"
             >
               <option value={3}>3 months</option>
               <option value={6}>6 months</option>
@@ -69,7 +69,7 @@ export function ReportsView() {
         </div>
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ld-primary"></div>
           </div>
         ) : (
           <TrendChart data={monthlyTrends} />
@@ -79,27 +79,27 @@ export function ReportsView() {
       {/* Variance Report */}
       <Card>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Planned vs Actual</h2>
+          <h2 className="text-lg font-semibold text-ld-text">Planned vs Actual</h2>
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600">From:</label>
+            <label className="text-sm text-ld-muted">From:</label>
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1 border border-ld-border bg-ld-surface text-ld-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ld-primary"
             />
-            <label className="text-sm text-gray-600">To:</label>
+            <label className="text-sm text-ld-muted">To:</label>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1 border border-ld-border bg-ld-surface text-ld-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ld-primary"
             />
           </div>
         </div>
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ld-primary"></div>
           </div>
         ) : (
           <VarianceTable data={varianceReport} />

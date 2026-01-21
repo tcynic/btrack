@@ -40,9 +40,9 @@ export function WeekMeetingList({ meetings, weekStartDate }: WeekMeetingListProp
 
   if (meetings.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-ld-muted">
         <svg
-          className="w-12 h-12 mx-auto mb-3 text-gray-300"
+          className="w-12 h-12 mx-auto mb-3 text-ld-border"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -68,25 +68,25 @@ export function WeekMeetingList({ meetings, weekStartDate }: WeekMeetingListProp
         return (
           <div key={dateStr}>
             <div className="flex items-center gap-2 mb-2">
-              <h4 className="text-sm font-semibold text-gray-900">
+              <h4 className="text-sm font-semibold text-ld-text">
                 {formatDateShort(dateStr)}
               </h4>
-              <div className="flex-1 h-px bg-gray-200" />
+              <div className="flex-1 h-px bg-ld-border" />
             </div>
             <div className="space-y-2">
               {dayMeetings.map((meeting) => (
                 <div
                   key={meeting.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-ld-border bg-ld-surface hover:border-ld-primary hover:bg-ld-surface2 transition-colors"
                 >
-                  <div className="flex items-center justify-center w-16 h-10 bg-blue-100 text-blue-700 rounded text-sm font-medium flex-shrink-0">
+                  <div className="flex items-center justify-center w-16 h-10 bg-ld-surface2 text-ld-primary rounded text-sm font-medium flex-shrink-0">
                     {meeting.durationMinutes} min
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">
+                    <div className="font-medium text-ld-text truncate">
                       {meeting.title}
                     </div>
-                    <div className="text-sm text-gray-500 truncate">
+                    <div className="text-sm text-ld-muted truncate">
                       {meeting.projectName}
                     </div>
                   </div>

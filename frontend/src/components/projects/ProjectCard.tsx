@@ -14,10 +14,10 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
     : 0
 
   const healthConfig: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-    on_track: { label: 'On Track', color: 'text-green-700', bg: 'bg-green-100', dot: 'bg-green-500' },
-    at_risk: { label: 'At Risk', color: 'text-yellow-700', bg: 'bg-yellow-100', dot: 'bg-yellow-500' },
-    over_budget: { label: 'Over Budget', color: 'text-red-700', bg: 'bg-red-100', dot: 'bg-red-500' },
-    completed: { label: 'Completed', color: 'text-blue-700', bg: 'bg-blue-100', dot: 'bg-blue-500' },
+    on_track: { label: 'On Track', color: 'text-[var(--ld-green)]', bg: 'bg-transparent', dot: 'bg-[var(--ld-green)]' },
+    at_risk: { label: 'At Risk', color: 'text-[var(--ld-orange)]', bg: 'bg-transparent', dot: 'bg-[var(--ld-orange)]' },
+    over_budget: { label: 'Over Budget', color: 'text-[var(--ld-pink)]', bg: 'bg-transparent', dot: 'bg-[var(--ld-pink)]' },
+    completed: { label: 'Completed', color: 'text-ld-primary', bg: 'bg-transparent', dot: 'bg-ld-primary' },
   }
 
   const health = healthConfig[project.health?.status as string || 'on_track']
@@ -30,16 +30,16 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-ld-text">
               {project.name}
             </h3>
             {project.isPersistent && (
-              <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">
+              <span className="px-2 py-0.5 text-xs border border-[var(--ld-purple)] text-[var(--ld-purple)] rounded-full">
                 Persistent
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 mb-1">
+          <p className="text-sm text-ld-muted mb-1">
             {formatDate(project.startDate)} - {formatDate(project.endDate)}
           </p>
           <div className="flex items-center gap-1.5" title={project.health?.message}>
@@ -50,7 +50,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           </div>
         </div>
         {!project.isActive && (
-          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+          <span className="px-2 py-1 text-xs border border-ld-border text-ld-muted rounded-full">
             Inactive
           </span>
         )}
@@ -58,31 +58,31 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
 
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
-          <p className="text-xs text-gray-500 uppercase">My Hours</p>
-          <p className="text-lg font-semibold text-gray-900">{project.myHours}</p>
+          <p className="text-xs text-ld-muted uppercase">My Hours</p>
+          <p className="text-lg font-semibold text-ld-text">{project.myHours}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 uppercase">Specialist</p>
-          <p className="text-lg font-semibold text-gray-900">{project.specialistHours}</p>
+          <p className="text-xs text-ld-muted uppercase">Specialist</p>
+          <p className="text-lg font-semibold text-ld-text">{project.specialistHours}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 uppercase">Weeks</p>
-          <p className="text-lg font-semibold text-gray-900">{project.totalWeeks}</p>
+          <p className="text-xs text-ld-muted uppercase">Weeks</p>
+          <p className="text-lg font-semibold text-ld-text">{project.totalWeeks}</p>
         </div>
       </div>
 
       {/* Progress bar */}
       <div className="mb-2">
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
+        <div className="flex justify-between text-xs text-ld-muted mb-1">
           <span>{project.totalActualHours} / {project.totalPlannedHours} hrs logged</span>
-          <span className={hoursRemaining >= 0 ? 'text-green-600' : 'text-red-600'}>
+          <span className={hoursRemaining >= 0 ? 'text-[var(--ld-green)]' : 'text-[var(--ld-pink)]'}>
             {hoursRemaining >= 0 ? `${hoursRemaining} remaining` : `${Math.abs(hoursRemaining)} over`}
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-ld-surface2 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all ${
-              progressPercent > 100 ? 'bg-red-500' : 'bg-blue-600'
+              progressPercent > 100 ? 'bg-[var(--ld-pink)]' : 'bg-ld-primary'
             }`}
             style={{ width: `${Math.min(100, progressPercent)}%` }}
           />

@@ -76,16 +76,16 @@ export function SettingsView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Manage your application settings and data</p>
+        <h1 className="text-2xl font-bold text-ld-text">Settings</h1>
+        <p className="text-ld-muted mt-1">Manage your application settings and data</p>
       </div>
 
       {message && (
         <div
-          className={`p-4 rounded-lg ${
+          className={`p-4 rounded-lg border ${
             message.type === 'success'
-              ? 'bg-green-50 border border-green-200 text-green-700'
-              : 'bg-red-50 border border-red-200 text-red-700'
+              ? 'border-[var(--ld-green)] text-[var(--ld-green)] bg-transparent'
+              : 'border-[var(--ld-pink)] text-[var(--ld-pink)] bg-transparent'
           }`}
         >
           {message.text}
@@ -96,8 +96,8 @@ export function SettingsView() {
       <Card>
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Appearance</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <h2 className="text-lg font-semibold text-ld-text mb-1">Appearance</h2>
+            <p className="text-sm text-ld-muted">
               Choose your preferred color scheme
             </p>
           </div>
@@ -107,8 +107,8 @@ export function SettingsView() {
               onClick={() => setTheme('light')}
               className={`flex-1 px-4 py-3 rounded-lg border-2 transition-colors ${
                 theme === 'light'
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  ? 'border-ld-primary bg-ld-surface2'
+                  : 'border-ld-border hover:border-ld-primary/50'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -120,7 +120,7 @@ export function SettingsView() {
                     d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span className="font-medium text-gray-900 dark:text-white">Light</span>
+                <span className="font-medium text-ld-text">Light</span>
               </div>
             </button>
 
@@ -128,8 +128,8 @@ export function SettingsView() {
               onClick={() => setTheme('dark')}
               className={`flex-1 px-4 py-3 rounded-lg border-2 transition-colors ${
                 theme === 'dark'
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  ? 'border-ld-primary bg-ld-surface2'
+                  : 'border-ld-border hover:border-ld-primary/50'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -141,7 +141,7 @@ export function SettingsView() {
                     d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
                   />
                 </svg>
-                <span className="font-medium text-gray-900 dark:text-white">Dark</span>
+                <span className="font-medium text-ld-text">Dark</span>
               </div>
             </button>
 
@@ -149,8 +149,8 @@ export function SettingsView() {
               onClick={() => setTheme('system')}
               className={`flex-1 px-4 py-3 rounded-lg border-2 transition-colors ${
                 theme === 'system'
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  ? 'border-ld-primary bg-ld-surface2'
+                  : 'border-ld-border hover:border-ld-primary/50'
               }`}
             >
               <div className="flex items-center justify-center gap-2">
@@ -162,7 +162,7 @@ export function SettingsView() {
                     d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
-                <span className="font-medium text-gray-900 dark:text-white">System</span>
+                <span className="font-medium text-ld-text">System</span>
               </div>
             </button>
           </div>
@@ -173,25 +173,25 @@ export function SettingsView() {
       <Card>
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Backup & Restore</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-ld-text mb-1">Backup & Restore</h2>
+            <p className="text-sm text-ld-muted">
               Create backups of your data or restore from a previous backup
             </p>
           </div>
 
           {backupInfo && (
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div className="bg-ld-surface2 p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Database Location:</span>
-                <span className="text-gray-900 font-mono text-xs">{backupInfo.databasePath}</span>
+                <span className="text-ld-muted">Database Location:</span>
+                <span className="text-ld-text font-mono text-xs">{backupInfo.databasePath}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Database Size:</span>
-                <span className="text-gray-900">{formatBytes(backupInfo.databaseSize)}</span>
+                <span className="text-ld-muted">Database Size:</span>
+                <span className="text-ld-text">{formatBytes(backupInfo.databaseSize)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Last Modified:</span>
-                <span className="text-gray-900">{backupInfo.lastModified}</span>
+                <span className="text-ld-muted">Last Modified:</span>
+                <span className="text-ld-text">{backupInfo.lastModified}</span>
               </div>
             </div>
           )}
@@ -241,10 +241,10 @@ export function SettingsView() {
             </Button>
           </div>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="bg-transparent border border-[var(--ld-orange)] rounded-lg p-4">
             <div className="flex">
               <svg
-                className="h-5 w-5 text-yellow-600 mr-3 flex-shrink-0"
+                className="h-5 w-5 text-[var(--ld-orange)] mr-3 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -257,8 +257,8 @@ export function SettingsView() {
                 />
               </svg>
               <div>
-                <p className="text-sm font-medium text-yellow-800">Important</p>
-                <p className="text-sm text-yellow-700 mt-1">
+                <p className="text-sm font-medium text-[var(--ld-orange)]">Important</p>
+                <p className="text-sm text-ld-muted mt-1">
                   Always create a backup before restoring from an old backup. Restoring will
                   replace all your current data.
                 </p>

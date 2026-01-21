@@ -23,8 +23,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'Active Projects',
       value: summary.totalActiveProjects,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-ld-primary',
+      bgColor: 'bg-ld-surface2',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -34,8 +34,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'At Risk Projects',
       value: summary.atRiskProjects,
-      color: summary.atRiskProjects > 0 ? 'text-orange-600' : 'text-gray-600',
-      bgColor: summary.atRiskProjects > 0 ? 'bg-orange-50' : 'bg-gray-50',
+      color: summary.atRiskProjects > 0 ? 'text-[var(--ld-orange)]' : 'text-ld-muted',
+      bgColor: 'bg-ld-surface2',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -46,8 +46,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
       label: 'Planned This Week',
       value: summary.totalPlannedThisWeek,
       suffix: 'hrs',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
+      color: 'text-ld-primary',
+      bgColor: 'bg-ld-surface2',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -58,8 +58,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
       label: 'Actual This Week',
       value: summary.totalActualThisWeek,
       suffix: 'hrs',
-      color: summary.totalActualThisWeek > summary.totalPlannedThisWeek ? 'text-red-600' : 'text-green-600',
-      bgColor: summary.totalActualThisWeek > summary.totalPlannedThisWeek ? 'bg-red-50' : 'bg-green-50',
+      color: summary.totalActualThisWeek > summary.totalPlannedThisWeek ? 'text-[var(--ld-pink)]' : 'text-[var(--ld-green)]',
+      bgColor: 'bg-ld-surface2',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -70,8 +70,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
       label: 'Planned Next Week',
       value: summary.totalPlannedNextWeek,
       suffix: 'hrs',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-[var(--ld-purple)]',
+      bgColor: 'bg-ld-surface2',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -81,8 +81,8 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
     {
       label: 'Goals Progress',
       value: summary.totalGoals > 0 ? `${summary.completedGoals}/${summary.totalGoals}` : '0',
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50',
+      color: 'text-[var(--ld-cyan)]',
+      bgColor: 'bg-ld-surface2',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -100,7 +100,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
               {card.icon}
             </div>
             <div>
-              <p className="text-sm text-gray-500">{card.label}</p>
+              <p className="text-sm text-ld-muted">{card.label}</p>
               <p className={`text-2xl font-bold ${card.color}`}>
                 {typeof card.value === 'number' ? card.value : card.value}
                 {card.suffix && <span className="text-sm font-normal ml-1">{card.suffix}</span>}

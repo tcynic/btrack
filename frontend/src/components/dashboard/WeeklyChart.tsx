@@ -26,25 +26,26 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
     <div className="h-80">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+          <CartesianGrid strokeDasharray="3 3" stroke={getComputedStyle(document.documentElement).getPropertyValue('--ld-border') || '#E5E7EB'} />
           <XAxis
             dataKey="weekLabel"
             tick={{ fontSize: 12 }}
             tickLine={false}
-            axisLine={{ stroke: '#E5E7EB' }}
+            axisLine={{ stroke: getComputedStyle(document.documentElement).getPropertyValue('--ld-border') || '#E5E7EB' }}
           />
           <YAxis
             tick={{ fontSize: 12 }}
             tickLine={false}
-            axisLine={{ stroke: '#E5E7EB' }}
+            axisLine={{ stroke: getComputedStyle(document.documentElement).getPropertyValue('--ld-border') || '#E5E7EB' }}
             label={{ value: 'Hours', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #E5E7EB',
+              backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--ld-surface') || 'white',
+              border: `1px solid ${getComputedStyle(document.documentElement).getPropertyValue('--ld-border') || '#E5E7EB'}`,
               borderRadius: '8px',
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              color: getComputedStyle(document.documentElement).getPropertyValue('--ld-text') || '#111111'
             }}
             formatter={(value: number, name: string) => [
               `${value} hrs`,

@@ -7,13 +7,13 @@ export function TaskStatusBadge({ status, onClick }: TaskStatusBadgeProps) {
   const getStatusClasses = (status: string) => {
     switch (status) {
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800'
+        return 'border border-ld-primary text-ld-primary bg-transparent'
       case 'completed':
-        return 'bg-green-100 text-green-800'
+        return 'border border-[var(--ld-green)] text-[var(--ld-green)] bg-transparent'
       case 'cancelled':
-        return 'bg-gray-100 text-gray-800'
+        return 'border border-ld-border text-ld-muted bg-transparent'
       default:
-        return 'bg-yellow-100 text-yellow-800'
+        return 'border border-[var(--ld-orange)] text-[var(--ld-orange)] bg-transparent'
     }
   }
 

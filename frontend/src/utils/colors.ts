@@ -1,57 +1,46 @@
 export type Status = 'under' | 'over' | 'on-track' | 'pending'
 
 /**
- * Get the color class for a status
+ * Get the color class for a status (text)
  */
 export function getStatusColor(status: Status): string {
   switch (status) {
     case 'under':
-      return 'text-green-600'
+      return 'text-[var(--ld-green)]'
     case 'over':
-      return 'text-red-600'
+      return 'text-[var(--ld-pink)]'
     case 'on-track':
-      return 'text-blue-600'
+      return 'text-ld-primary'
     case 'pending':
-      return 'text-gray-400'
+      return 'text-ld-muted'
     default:
-      return 'text-gray-600'
+      return 'text-ld-muted'
   }
 }
 
 /**
- * Get the background color class for a status
+ * Get the background color class for a status (kept minimal, rely on border/text for brand pop)
  */
-export function getStatusBgColor(status: Status): string {
-  switch (status) {
-    case 'under':
-      return 'bg-green-100'
-    case 'over':
-      return 'bg-red-100'
-    case 'on-track':
-      return 'bg-blue-100'
-    case 'pending':
-      return 'bg-gray-100'
-    default:
-      return 'bg-gray-100'
-  }
+export function getStatusBgColor(_status: Status): string {
+  return 'bg-transparent'
 }
 
 /**
  * Get the badge classes for a status
  */
 export function getStatusBadgeClasses(status: Status): string {
-  const base = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium'
+  const base = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border';
   switch (status) {
     case 'under':
-      return `${base} bg-green-100 text-green-800`
+      return `${base} border-[var(--ld-green)] text-[var(--ld-green)]`
     case 'over':
-      return `${base} bg-red-100 text-red-800`
+      return `${base} border-[var(--ld-pink)] text-[var(--ld-pink)]`
     case 'on-track':
-      return `${base} bg-blue-100 text-blue-800`
+      return `${base} border-ld-primary text-ld-primary`
     case 'pending':
-      return `${base} bg-gray-100 text-gray-800`
+      return `${base} border-ld-border text-ld-muted`
     default:
-      return `${base} bg-gray-100 text-gray-800`
+      return `${base} border-ld-border text-ld-muted`
   }
 }
 
@@ -74,10 +63,10 @@ export function getStatusLabel(status: Status): string {
 }
 
 /**
- * Get chart colors for planned vs actual
+ * Chart colors for planned vs actual using brand palette
  */
 export const chartColors = {
-  planned: '#3B82F6', // blue-500
-  actual: '#10B981',  // emerald-500
-  over: '#EF4444',    // red-500
+  planned: '#7084FF', // LD Powder Blue
+  actual: '#A9FF5E',  // LD Green
+  over: '#FF35A2',    // LD Pink
 }

@@ -48,12 +48,12 @@ export function DailyAgenda({
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-ld-primary"></div>
         </div>
       ) : meetings.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-ld-muted">
           <svg
-            className="w-12 h-12 mx-auto mb-3 text-gray-300"
+            className="w-12 h-12 mx-auto mb-3 text-ld-border"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -73,19 +73,19 @@ export function DailyAgenda({
             <div
               key={meeting.id}
               onClick={() => onMeetingClick(meeting)}
-              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-colors"
+              className="flex items-center justify-between p-3 rounded-lg border border-ld-border hover:border-ld-primary hover:bg-ld-surface2 cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-16 h-10 bg-blue-100 text-blue-700 rounded text-sm font-medium">
+                <div className="flex items-center justify-center w-16 h-10 bg-ld-surface2 text-ld-primary rounded text-sm font-medium">
                   {meeting.durationMinutes} min
                 </div>
                 <div>
-                  <div className="font-medium text-gray-900">{meeting.title}</div>
-                  <div className="text-sm text-gray-500">{meeting.projectName}</div>
+                  <div className="font-medium text-ld-text">{meeting.title}</div>
+                  <div className="text-sm text-ld-muted">{meeting.projectName}</div>
                 </div>
               </div>
               <svg
-                className="w-5 h-5 text-gray-400"
+                className="w-5 h-5 text-ld-muted"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

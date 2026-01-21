@@ -7,7 +7,7 @@ interface VarianceTableProps {
 export function VarianceTable({ data }: VarianceTableProps) {
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-ld-muted">
         No variance data available
       </div>
     )
@@ -15,45 +15,45 @@ export function VarianceTable({ data }: VarianceTableProps) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-ld-border">
+        <thead className="bg-ld-surface2">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-ld-muted uppercase tracking-wider">
               Project
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Planned
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Actual
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Variance
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               % Used
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-ld-surface divide-y divide-ld-border">
           {data.map((row) => (
-            <tr key={row.projectId} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+            <tr key={row.projectId} className="hover:bg-ld-surface2">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-ld-text">
                 {row.projectName}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-ld-muted">
                 {row.planned}h
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-ld-muted">
                 {row.actual}h
               </td>
               <td
                 className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${
                   row.variance > 0
-                    ? 'text-red-600'
+                    ? 'text-[var(--ld-pink)]'
                     : row.variance < 0
-                    ? 'text-green-600'
-                    : 'text-gray-500'
+                    ? 'text-[var(--ld-green)]'
+                    : 'text-ld-muted'
                 }`}
               >
                 {row.variance > 0 ? '+' : ''}
@@ -62,10 +62,10 @@ export function VarianceTable({ data }: VarianceTableProps) {
               <td
                 className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${
                   row.percentage > 100
-                    ? 'text-red-600'
+                    ? 'text-[var(--ld-pink)]'
                     : row.percentage > 80
-                    ? 'text-yellow-600'
-                    : 'text-green-600'
+                    ? 'text-[var(--ld-orange)]'
+                    : 'text-[var(--ld-green)]'
                 }`}
               >
                 {row.percentage}%

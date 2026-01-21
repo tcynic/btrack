@@ -128,32 +128,32 @@ export function Dashboard() {
       <div className="mb-6">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Capacity Overview</h2>
-            <p className="text-gray-500">
+            <h2 className="text-2xl font-bold text-ld-text">Capacity Overview</h2>
+            <p className="text-ld-muted">
               Monitor your weekly bandwidth across all active projects
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm">
-              <label className="text-gray-600">Weeks back:</label>
+              <label className="text-ld-text">Weeks back:</label>
               <input
                 type="number"
                 min="1"
                 max="52"
                 value={weeksBack}
                 onChange={(e) => setWeeksBack(Number(e.target.value))}
-                className="w-16 rounded border-gray-300 text-sm"
+                className="w-16 rounded border-ld-border text-sm bg-ld-surface text-ld-text px-2 py-1"
               />
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <label className="text-gray-600">Weeks forward:</label>
+              <label className="text-ld-text">Weeks forward:</label>
               <input
                 type="number"
                 min="1"
                 max="52"
                 value={weeksForward}
                 onChange={(e) => setWeeksForward(Number(e.target.value))}
-                className="w-16 rounded border-gray-300 text-sm"
+                className="w-16 rounded border-ld-border text-sm bg-ld-surface text-ld-text px-2 py-1"
               />
             </div>
             <Button size="sm" onClick={handleDateRangeChange}>
@@ -196,7 +196,7 @@ export function Dashboard() {
           />
           {isLoading ? (
             <div className="h-80 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ld-primary"></div>
             </div>
           ) : (
             <WeeklyChart data={weekData} />

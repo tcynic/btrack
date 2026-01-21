@@ -64,9 +64,9 @@ export function ActualHoursInput({ value, onChange, disabled }: ActualHoursInput
         onFocus={() => setIsEditing(true)}
         min={0}
         className={`
-          w-16 px-2 py-1 text-right border rounded
-          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          ${isSaving ? 'bg-gray-100' : 'bg-white'}
+          w-16 px-2 py-1 text-right border border-ld-border rounded bg-ld-surface text-ld-text
+          focus:outline-none focus:ring-2 focus:ring-ld-primary focus:border-ld-primary
+          ${isSaving ? 'opacity-50' : ''}
         `}
         disabled={isSaving}
       />

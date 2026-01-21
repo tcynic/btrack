@@ -16,9 +16,9 @@ export function WeekHoursTable({
 }: WeekHoursTableProps) {
   if (entries.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-ld-muted">
         <svg
-          className="w-12 h-12 mx-auto mb-3 text-gray-300"
+          className="w-12 h-12 mx-auto mb-3 text-ld-border"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -41,38 +41,38 @@ export function WeekHoursTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-ld-border">
+        <thead className="bg-ld-surface2">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-ld-muted uppercase tracking-wider">
               Project
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Planned
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Actual
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Variance
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-ld-muted uppercase tracking-wider">
               Status
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-ld-surface divide-y divide-ld-border">
           {entries.map((entry) => {
             const canEdit = entry.isPastWeek || isCurrentWeek
             
             return (
-              <tr key={entry.id} className={isCurrentWeek ? 'bg-blue-50' : ''}>
+              <tr key={entry.id} className={isCurrentWeek ? 'bg-ld-surface2' : ''}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-ld-text">
                     {entry.projectName}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-ld-text">
                   {entry.plannedHours} hrs
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
@@ -83,11 +83,11 @@ export function WeekHoursTable({
                     }}
                     disabled={!canEdit}
                   />
-                  <span className="ml-1 text-gray-500">hrs</span>
+                  <span className="ml-1 text-ld-muted">hrs</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                   <span className={`font-medium ${
-                    entry.variance > 0 ? 'text-green-600' : entry.variance < 0 ? 'text-red-600' : 'text-gray-600'
+                    entry.variance > 0 ? 'text-[var(--ld-green)]' : entry.variance < 0 ? 'text-[var(--ld-pink)]' : 'text-ld-muted'
                   }`}>
                     {entry.variance > 0 ? '+' : ''}{entry.variance}
                   </span>
@@ -99,19 +99,19 @@ export function WeekHoursTable({
             )
           })}
         </tbody>
-        <tfoot className="bg-gray-50">
+        <tfoot className="bg-ld-surface2">
           <tr>
-            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+            <td className="px-6 py-3 text-sm font-medium text-ld-text">
               Total
             </td>
-            <td className="px-6 py-3 text-sm font-medium text-right text-gray-900">
+            <td className="px-6 py-3 text-sm font-medium text-right text-ld-text">
               {totalPlanned} hrs
             </td>
-            <td className="px-6 py-3 text-sm font-medium text-right text-gray-900">
+            <td className="px-6 py-3 text-sm font-medium text-right text-ld-text">
               {totalActual} hrs
             </td>
             <td className={`px-6 py-3 text-sm font-medium text-right ${
-              totalVariance > 0 ? 'text-green-600' : totalVariance < 0 ? 'text-red-600' : 'text-gray-900'
+              totalVariance > 0 ? 'text-[var(--ld-green)]' : totalVariance < 0 ? 'text-[var(--ld-pink)]' : 'text-ld-text'
             }`}>
               {totalVariance > 0 ? '+' : ''}{totalVariance} hrs
             </td>
