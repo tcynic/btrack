@@ -2,23 +2,23 @@ package system
 
 import (
 	"context"
-	"database/sql"
 
 	"btrack/internal/services/project"
+	"btrack/internal/store"
 )
 
 // Service handles system-related operations (backup, export, templates)
 type Service struct {
 	projectService *project.Service
-	db             *sql.DB
+	store          *store.Store
 	ctx            context.Context
 }
 
 // NewService creates a new system service
-func NewService(projectService *project.Service, db *sql.DB, ctx context.Context) *Service {
+func NewService(projectService *project.Service, s *store.Store, ctx context.Context) *Service {
 	return &Service{
 		projectService: projectService,
-		db:             db,
+		store:          s,
 		ctx:            ctx,
 	}
 }

@@ -4,19 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"btrack/internal/database"
 	"btrack/internal/models"
+	"btrack/internal/store"
 )
 
-// ProjectTemplate represents a saved project template
-type ProjectTemplate struct {
-	ID              int64  `json:"id"`
-	Name            string `json:"name"`
-	TotalSoldHours  int    `json:"totalSoldHours"`
-	SpecialistHours int    `json:"specialistHours"`
-	CreatedAt       string `json:"createdAt"`
-	UpdatedAt       string `json:"updatedAt"`
-}
+// ProjectTemplate is an alias for store type
+type ProjectTemplate = store.Template
 
 // CreateProjectFromTemplateInput represents input for creating a project from a template
 type CreateProjectFromTemplateInput struct {
@@ -39,74 +32,27 @@ func (s *Service) CreateTemplate(projectID int64, templateName string) (*Project
 	}
 
 	// Create template from project
-	result, err := s.db.Exec(database.InsertTemplate,
-		templateName,
-		project.TotalSoldHours,
-		project.SpecialistHours,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert template: %w", err)
+	template := &store.Template{
+		Name:            templateName,
+		TotalSoldHours:  project.TotalSoldHours,
+		SpecialistHours: project.SpecialistHours,
 	}
 
-	templateID, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get template ID: %w", err)
+	if err := s.store.CreateTemplate(template); err != nil {
+		return nil, err
 	}
 
-	return s.GetTemplate(templateID)
+	return template, nil
 }
 
 // GetTemplates returns all project templates
 func (s *Service) GetTemplates() ([]ProjectTemplate, error) {
-	rows, err := s.db.Query(database.SelectAllTemplates)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query templates: %w", err)
-	}
-	defer rows.Close()
-
-	var templates []ProjectTemplate
-	for rows.Next() {
-		var t ProjectTemplate
-
-		err := rows.Scan(
-			&t.ID,
-			&t.Name,
-			&t.TotalSoldHours,
-			&t.SpecialistHours,
-			&t.CreatedAt,
-			&t.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan template: %w", err)
-		}
-
-		templates = append(templates, t)
-	}
-
-	if templates == nil {
-		templates = []ProjectTemplate{}
-	}
-
-	return templates, nil
+	return s.store.GetTemplates()
 }
 
 // GetTemplate returns a single template by ID
 func (s *Service) GetTemplate(id int64) (*ProjectTemplate, error) {
-	var t ProjectTemplate
-
-	err := s.db.QueryRow(database.SelectTemplateByID, id).Scan(
-		&t.ID,
-		&t.Name,
-		&t.TotalSoldHours,
-		&t.SpecialistHours,
-		&t.CreatedAt,
-		&t.UpdatedAt,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("template not found: %w", err)
-	}
-
-	return &t, nil
+	return s.store.GetTemplate(id)
 }
 
 // CreateProjectFromTemplate creates a new project from a template
@@ -144,19 +90,5 @@ func (s *Service) CreateProjectFromTemplate(input CreateProjectFromTemplateInput
 
 // DeleteTemplate deletes a template
 func (s *Service) DeleteTemplate(id int64) error {
-	result, err := s.db.Exec(database.DeleteTemplate, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete template: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("template not found")
-	}
-
-	return nil
+	return s.store.DeleteTemplate(id)
 }

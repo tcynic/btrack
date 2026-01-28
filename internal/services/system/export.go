@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"btrack/internal/database"
 )
 
 // ExportWeeklyReport exports weekly hours data as CSV
@@ -26,45 +24,41 @@ func (s *Service) ExportWeeklyReport(startDate, endDate string) (string, error) 
 		return "", fmt.Errorf("start date must be before end date")
 	}
 
-	// Query weekly entries
-	rows, err := s.db.Query(database.SelectWeeklyEntriesByDateRange, startDate, endDate)
+	// Get all projects and their weekly entries
+	projects, err := s.store.GetAllProjects(false)
 	if err != nil {
-		return "", fmt.Errorf("failed to query weekly entries: %w", err)
+		return "", err
 	}
-	defer rows.Close()
 
 	// Build CSV
 	var buf strings.Builder
 	writer := csv.NewWriter(&buf)
 
 	// Write header
-	headers := []string{"Week Start", "Week Number", "Project ID", "Planned Hours", "Actual Hours", "Variance"}
+	headers := []string{"Project Name", "Week Start", "Week Number", "Planned Hours", "Actual Hours", "Variance"}
 	if err := writer.Write(headers); err != nil {
 		return "", fmt.Errorf("failed to write CSV header: %w", err)
 	}
 
 	// Write data rows
-	for rows.Next() {
-		var projectID, weekNumber, planned, actual int64
-		var weekStart, createdAt, updatedAt string
-
-		err := rows.Scan(&projectID, &projectID, &weekStart, &weekNumber, &planned, &actual, &createdAt, &updatedAt)
-		if err != nil {
-			return "", fmt.Errorf("failed to scan row: %w", err)
-		}
-
-		variance := planned - actual
-		row := []string{
-			weekStart,
-			fmt.Sprintf("%d", weekNumber),
-			fmt.Sprintf("%d", projectID),
-			fmt.Sprintf("%d", planned),
-			fmt.Sprintf("%d", actual),
-			fmt.Sprintf("%d", variance),
-		}
-
-		if err := writer.Write(row); err != nil {
-			return "", fmt.Errorf("failed to write CSV row: %w", err)
+	for _, proj := range projects {
+		for _, entry := range proj.WeeklyEntries {
+			// Check if entry is within date range
+			entryDate, _ := time.Parse("2006-01-02", entry.WeekStartDate)
+			if (entryDate.Equal(start) || entryDate.After(start)) && (entryDate.Equal(end) || entryDate.Before(end)) {
+				variance := entry.PlannedHours - entry.ActualHours
+				row := []string{
+					proj.Name,
+					entry.WeekStartDate,
+					fmt.Sprintf("%d", entry.WeekNumber),
+					fmt.Sprintf("%d", entry.PlannedHours),
+					fmt.Sprintf("%d", entry.ActualHours),
+					fmt.Sprintf("%d", variance),
+				}
+				if err := writer.Write(row); err != nil {
+					return "", fmt.Errorf("failed to write CSV row: %w", err)
+				}
+			}
 		}
 	}
 
@@ -84,12 +78,11 @@ func (s *Service) ExportProjectSummary(projectID int64) (string, error) {
 		return "", err
 	}
 
-	// Get weekly entries
-	rows, err := s.db.Query(database.SelectWeeklyEntriesByProject, projectID)
+	// Get project with nested data from store
+	projWithNested, err := s.store.GetProject(projectID)
 	if err != nil {
-		return "", fmt.Errorf("failed to query weekly entries: %w", err)
+		return "", err
 	}
-	defer rows.Close()
 
 	// Build CSV
 	var buf strings.Builder
@@ -129,21 +122,13 @@ func (s *Service) ExportProjectSummary(projectID int64) (string, error) {
 	}
 
 	// Write weekly data
-	for rows.Next() {
-		var id, projectID, weekNumber, planned, actual int64
-		var weekStart, createdAt, updatedAt string
-
-		err := rows.Scan(&id, &projectID, &weekStart, &weekNumber, &planned, &actual, &createdAt, &updatedAt)
-		if err != nil {
-			return "", fmt.Errorf("failed to scan row: %w", err)
-		}
-
-		variance := planned - actual
+	for _, entry := range projWithNested.WeeklyEntries {
+		variance := entry.PlannedHours - entry.ActualHours
 		row := []string{
-			weekStart,
-			fmt.Sprintf("%d", weekNumber),
-			fmt.Sprintf("%d", planned),
-			fmt.Sprintf("%d", actual),
+			entry.WeekStartDate,
+			fmt.Sprintf("%d", entry.WeekNumber),
+			fmt.Sprintf("%d", entry.PlannedHours),
+			fmt.Sprintf("%d", entry.ActualHours),
 			fmt.Sprintf("%d", variance),
 		}
 
