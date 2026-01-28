@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"btrack/internal/database"
 	"btrack/internal/models"
 )
 
@@ -24,27 +23,8 @@ func (s *Service) Update(ctx context.Context, input models.UpdateProjectInput, a
 		existing.StartDate != input.StartDate ||
 		existing.EndDate != input.EndDate)
 
-	tx, err := s.db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer tx.Rollback()
-
 	// Update project
-	isActive := 0
-	if input.IsActive {
-		isActive = 1
-	}
-
-	_, err = tx.Exec(database.UpdateProject,
-		input.Name,
-		input.TotalSoldHours,
-		input.SpecialistHours,
-		input.StartDate,
-		input.EndDate,
-		isActive,
-		input.ID,
-	)
+	_, err = s.store.UpdateProject(input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update project: %w", err)
 	}
@@ -66,12 +46,19 @@ func (s *Service) Update(ctx context.Context, input models.UpdateProjectInput, a
 			return nil, fmt.Errorf("invalid end date format: %w", err)
 		}
 
-		// If the new start date is after next Monday, we need to delete everything and recalculate
+		// Get current weekly entries
+		currentEntries, err := s.store.GetWeeklyEntries(input.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get weekly entries: %w", err)
+		}
+
+		// If the new start date is after next Monday, recalculate everything from scratch
 		if newStartDate.After(nextMonday) || newStartDate.Equal(nextMonday) {
 			// Delete all existing entries
-			_, err = tx.Exec(database.DeleteWeeklyEntriesByProject, input.ID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to delete weekly entries: %w", err)
+			for _, entry := range currentEntries {
+				if err := s.store.DeleteWeeklyEntry(input.ID, entry.ID); err != nil {
+					return nil, fmt.Errorf("failed to delete weekly entry: %w", err)
+				}
 			}
 
 			// Calculate new distribution from scratch
@@ -88,29 +75,24 @@ func (s *Service) Update(ctx context.Context, input models.UpdateProjectInput, a
 
 			// Insert new entries
 			for _, entry := range entries {
-				_, err := tx.Exec(database.InsertWeeklyEntry,
-					input.ID,
-					entry.WeekStartDate,
-					entry.WeekNumber,
-					entry.PlannedHours,
-				)
+				_, err := s.store.AddWeeklyEntry(input.ID, entry)
 				if err != nil {
-					return nil, fmt.Errorf("failed to insert weekly entry: %w", err)
+					return nil, fmt.Errorf("failed to add weekly entry: %w", err)
 				}
 			}
 		} else {
 			// Preserve past/current weeks, only recalculate future weeks
 
-			// Get sum of planned hours for past/current weeks
-			var pastWeekHours int
-			err = tx.QueryRow(database.SelectPastWeeklyHours, input.ID, nextMondayStr).Scan(&pastWeekHours)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get past week hours: %w", err)
+			// Calculate sum of past week planned hours
+			pastWeekHours := 0
+			for _, entry := range currentEntries {
+				if entry.WeekStartDate < nextMondayStr {
+					pastWeekHours += entry.PlannedHours
+				}
 			}
 
 			// Delete only future week entries
-			_, err = tx.Exec(database.DeleteFutureWeeklyEntries, input.ID, nextMondayStr)
-			if err != nil {
+			if err := s.store.DeleteFutureWeeklyEntries(input.ID, nextMondayStr); err != nil {
 				return nil, fmt.Errorf("failed to delete future weekly entries: %w", err)
 			}
 
@@ -137,14 +119,15 @@ func (s *Service) Update(ctx context.Context, input models.UpdateProjectInput, a
 						hours++ // Frontload extra hours
 					}
 
-					_, err := tx.Exec(database.InsertWeeklyEntry,
-						input.ID,
-						currentMonday.Format("2006-01-02"),
-						0, // Week number will be recalculated; set to 0 for now
-						hours,
-					)
+					entry := models.WeeklyEntry{
+						WeekStartDate: currentMonday.Format("2006-01-02"),
+						WeekNumber:    0,
+						PlannedHours:  hours,
+						ActualHours:   0,
+					}
+					_, err := s.store.AddWeeklyEntry(input.ID, entry)
 					if err != nil {
-						return nil, fmt.Errorf("failed to insert weekly entry: %w", err)
+						return nil, fmt.Errorf("failed to add weekly entry: %w", err)
 					}
 
 					currentMonday = currentMonday.AddDate(0, 0, 7)
@@ -153,14 +136,10 @@ func (s *Service) Update(ctx context.Context, input models.UpdateProjectInput, a
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return s.GetByID(ctx, input.ID)
 }
 
-// Delete soft-deletes a project (sets deleted_at timestamp)
+// Delete deletes a project and all its nested data
 func (s *Service) Delete(ctx context.Context, id int64, autoBackupFn func() error) error {
 	// Check if project is persistent
 	project, err := s.GetByID(ctx, id)
@@ -178,101 +157,18 @@ func (s *Service) Delete(ctx context.Context, id int64, autoBackupFn func() erro
 		log.Printf("Warning: auto-backup failed before delete: %v", err)
 	}
 
-	result, err := s.db.Exec(database.SoftDeleteProject, id)
-	if err != nil {
-		return fmt.Errorf("failed to delete project: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return models.NotFound("project")
-	}
-
-	return nil
+	return s.store.DeleteProject(id)
 }
 
-// Restore restores a soft-deleted project
+// Restore is no longer needed with JSON store (no soft delete)
+// Keeping stub for API compatibility
 func (s *Service) Restore(ctx context.Context, id int64) (*models.ProjectWithStats, error) {
-	result, err := s.db.Exec(database.RestoreProject, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to restore project: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return nil, models.NotFound("project")
-	}
-
-	// Return the restored project
-	// Note: We need to query without the deleted_at filter
-	row := s.db.QueryRow(`
-		SELECT id, name, total_sold_hours, specialist_hours, start_date, end_date, is_active, is_persistent, created_at, updated_at
-		FROM projects WHERE id = ?
-	`, id)
-	p, err := models.ScanProject(row.Scan)
-	if err != nil {
-		return nil, models.NotFound("project")
-	}
-
-	stats, err := s.getStats(p.ID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get project stats: %w", err)
-	}
-
-	return &models.ProjectWithStats{
-		Project:           *p,
-		MyHours:           p.TotalSoldHours - p.SpecialistHours,
-		TotalWeeks:        stats.TotalWeeks,
-		TotalPlannedHours: stats.TotalPlanned,
-		TotalActualHours:  stats.TotalActual,
-	}, nil
+	return nil, fmt.Errorf("restore not supported with JSON store")
 }
 
-// PermanentlyDelete permanently removes a project and its weekly entries
+// PermanentlyDelete is the same as Delete with JSON store (no soft delete)
 func (s *Service) PermanentlyDelete(ctx context.Context, id int64, autoBackupFn func() error) error {
-	// Check if project is persistent
-	// Query without deleted_at filter to check persistence
-	var isPersistent int
-	err := s.db.QueryRow(`
-		SELECT is_persistent FROM projects WHERE id = ?
-	`, id).Scan(&isPersistent)
-	if err != nil {
-		return models.NotFound("project")
-	}
-
-	if isPersistent == 1 {
-		return models.Forbidden("cannot permanently delete persistent project")
-	}
-
-	// Auto-backup before permanent deletion
-	if err := autoBackupFn(); err != nil {
-		// Log warning but don't fail the operation
-		log.Printf("Warning: auto-backup failed before permanent delete: %v", err)
-	}
-
-	result, err := s.db.Exec(database.PermanentlyDeleteProject, id)
-	if err != nil {
-		return fmt.Errorf("failed to permanently delete project: %w", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return models.NotFound("project")
-	}
-
-	return nil
+	return s.Delete(ctx, id, autoBackupFn)
 }
 
 // ToggleActive toggles the is_active status of a project
