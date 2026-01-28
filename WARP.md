@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-btrack (Bandwidth Tracker) is a desktop application for tracking project bandwidth allocation across weeks. Built with Wails v2, combining a Go backend with a React/TypeScript frontend, and uses SQLite for local data persistence.
+btrack (Bandwidth Tracker) is a desktop application for tracking project bandwidth allocation across weeks. Built with Wails v2, combining a Go backend with a React/TypeScript frontend, and uses a JSON file for local data persistence.
 
 **Core Functionality**: Track "My Hours" (TotalSoldHours - SpecialistHours) across weekly entries using a frontloaded distribution algorithm. Users can plan project timelines, view dashboard aggregations, and update actual hours for past weeks.
 
@@ -33,14 +33,15 @@ wails build                  # Build production binary for current platform
 
 Creates a native application binary with embedded frontend assets.
 
-### Database Management
+### Data Management
 ```bash
-# Reset database during development (macOS)
-rm ~/Library/Application\ Support/btrack/btrack.db
-# Database will be recreated with fresh schema on next run
+# View data file during development (macOS)
+cat ~/Library/Application\ Support/btrack/btrack-data.json
+# Reset data (creates backup on next run)
+rm ~/Library/Application\ Support/btrack/btrack-data.json
 ```
 
-**Database Location**: `~/Library/Application Support/btrack/btrack.db` (macOS)
+**Data Location**: `~/Library/Application Support/btrack/btrack-data.json` (macOS)
 
 ## Architecture
 
@@ -48,7 +49,7 @@ rm ~/Library/Application\ Support/btrack/btrack.db
 
 **Entry Point & Lifecycle**:
 - **main.go**: Configures Wails app (1280x800 window), embeds `frontend/dist` assets via `//go:embed all:frontend/dist`, binds App instance to frontend
-- **app.go**: Main App struct with database connection; `startup(ctx)` receives runtime context and initializes SQLite, `shutdown(ctx)` closes DB
+- **app.go**: Main App struct with Store reference; `startup(ctx)` receives runtime context and loads data from JSON, `shutdown(ctx)` saves data to JSON
 - **Binding**: All public (capitalized) methods on App struct are automatically callable from JavaScript/TypeScript frontend
 
 **Domain Logic** (all methods exposed to frontend via Wails bindings):
@@ -107,10 +108,16 @@ rm ~/Library/Application\ Support/btrack/btrack.db
   - `GetCapacityUtilization`: Weekly capacity utilization data with percentages
 
 **Data Layer**:
-- **internal/database/**: SQLite setup with modernc.org/sqlite driver
-  - `database.go`: Initializes DB at `~/Library/Application Support/btrack/btrack.db` (macOS)
-  - `migrations.go`: Schema with `projects`, `weekly_entries`, `project_meetings`, `project_notes`, `project_goals`, `project_templates` tables; includes `SeedPersistentProjects()` to create "Management" and "Internal Projects" on first run
-  - `queries.go`: SQL query constants for all CRUD, search, export, and reporting operations
+- **internal/store/**: In-memory state with JSON persistence
+  - `store.go`: Store struct with Load/Save methods and atomic write-to-temp-then-rename pattern
+  - `types.go`: Data struct with project-centric nested structure (ProjectWithNested wraps Project + nested entities)
+  - `projects.go`: Project CRUD operations (~260 lines)
+  - `weekly_entries.go`: Weekly entry operations
+  - `nested_entities.go`: CRUD for meetings, notes, goals, tasks (~535 lines)
+  - `search.go`: Cross-project search operations
+  - `aggregations.go`: Dashboard, reports, statistics (~336 lines)
+  - `templates.go`: Template CRUD operations
+  - All operations lock/unlock for thread-safety, save after mutations
 - **internal/models/**: Domain models and validation
   - `project.go`: Project, ProjectWithStats, ProjectHealth, CreateProjectInput, UpdateProjectInput
   - `weekly_entry.go`: WeeklyEntry, WeeklyEntryWithStatus (includes IsPastWeek, Status calculations)
@@ -120,6 +127,7 @@ rm ~/Library/Application\ Support/btrack/btrack.db
   - `task.go`: Task, TaskWithContext, CreateTaskInput, UpdateTaskInput (with status: pending/in_progress/completed; priority: low/medium/high)
   - `search.go`: NoteWithProject, GoalWithProject, TaskWithContext (models for search results with parent project names)
   - `errors.go`: Custom error types for all domain objects
+  - `nullable.go`: NullableString helper for handling optional string fields
 
 ### Frontend Structure (React/TypeScript + Vite)
 
@@ -135,63 +143,94 @@ rm ~/Library/Application\ Support/btrack/btrack.db
   - Import Go methods: `import {CreateProject} from '../wailsjs/go/main/App'`
   - Bindings regenerate automatically during `wails dev`
 
-### Database Schema
+### Data Structure (JSON)
+
+The application stores all data in a single JSON file with a project-centric nested structure:
+
+```json
+{
+  "schema_version": 1,
+  "next_ids": {"project": 11, "meeting": 26, ...},
+  "projects": [
+    {
+      /* project fields */,
+      "weekly_entries": [...],
+      "meetings": [...],
+      "notes": [...],
+      "goals": [...],
+      "tasks": [...]
+    }
+  ],
+  "templates": [...]
+}
+```
 
 **projects**:
 - Stores client projects with total_sold_hours, specialist_hours, date range, is_active, is_persistent flags
 - MyHours calculated as: TotalSoldHours - SpecialistHours
 - Persistent projects ("Management", "Internal Projects"): special projects with dates 1900-2099, require manual weekly entry creation
+- Each project contains nested arrays for all related entities
 
-**weekly_entries**:
+**weekly_entries** (nested under projects):
 - One entry per project per week (Monday start dates)
 - planned_hours: Calculated via frontloading algorithm (for non-persistent projects)
 - actual_hours: User-entered for past/current weeks only
-- Foreign key cascade: Deleting project removes all weekly entries
-- Unique constraint: (project_id, week_start_date)
+- Cascade delete: Removing project removes all nested weekly entries
 
-**project_meetings**:
+**meetings** (nested under projects):
 - Meeting records linked to projects: title, date, duration_minutes, attendees, notes
-- Foreign key cascade deletes
+- Cascade delete with parent project
 
-**project_notes**:
+**notes** (nested under projects):
 - Notes linked to projects: title, content (markdown)
-- Foreign key cascade deletes
+- Cascade delete with parent project
 
-**project_goals**:
+**goals** (nested under projects):
 - Goals linked to projects: title, description, status, target_date
 - Status values: pending, in_progress, completed, cancelled
-- Foreign key cascade deletes
+- Cascade delete with parent project
 
-**project_templates**:
-- Saved project templates: name, total_sold_hours, specialist_hours
-- Used to quickly create new projects with predefined hour allocations
-- No foreign key dependencies
-
-**tasks**:
+**tasks** (nested under projects):
 - Tasks linked to projects: title, description, status, priority, due_date
 - Can be standalone (source_type='standalone') or linked to meetings/notes (source_type='meeting'/'note' with source_id)
 - Status values: pending, in_progress, completed
 - Priority values: low, medium, high
-- Foreign key cascade deletes
+- Cascade delete with parent project
+
+**templates** (top-level):
+- Saved project templates: name, total_sold_hours, specialist_hours
+- Used to quickly create new projects with predefined hour allocations
+- Independent of projects
 
 ## Code Patterns
 
 ### Backend (Go)
 
-**Database Scanning**: Entity models include `Scan` functions that encapsulate row scanning logic:
+**Store Operations**: All CRUD operations go through the Store, which handles locking and persistence:
 ```go
-// ScanMeeting scans a database row into a Meeting struct
-meeting, err := models.ScanMeeting(rows.Scan)
+// Store automatically locks, mutates, saves, and unlocks
+project, err := s.CreateProject(input)
+if err != nil {
+  return nil, err
+}
 ```
 
-**Slice Helpers**: Use `database.EnsureSlice()` to prevent nil JSON responses:
+**Thread Safety**: Store uses sync.RWMutex for concurrent read/write safety. Read operations use RLock, write operations use Lock.
+
+**Atomic Saves**: Store.Save() uses write-to-temp-then-rename pattern to ensure data integrity:
 ```go
-return database.EnsureSlice(meetings), nil
+// Write to .tmp file, then atomically rename
+if err := s.saveUnlocked(); err != nil {
+  return err
+}
 ```
 
-**Timestamp Parsing**: Use `database.ParseTimestamp()` for consistent timestamp handling:
+**Empty Slice Handling**: Methods return empty slices instead of nil to prevent frontend null errors:
 ```go
-m.CreatedAt = database.ParseTimestamp(createdAt)
+if result == nil {
+  result = []Meeting{}
+}
+return result, nil
 ```
 
 ### Frontend (React/TypeScript)
@@ -244,11 +283,20 @@ import {MyNewMethod} from '../wailsjs/go/main/App'
 MyNewMethod("test").then(result => console.log(result))
 ```
 
-### Database Changes
-1. Modify schema in `internal/database/migrations.go`
-2. Update queries in `internal/database/queries.go` if needed
-3. For development, delete `~/Library/Application Support/btrack/btrack.db` to reset schema
-4. Note: Database file is at `~/Library/Application Support/btrack/btrack.db` on macOS
+### Migrating from SQLite (Legacy)
+If you have existing SQLite data from a previous version:
+```bash
+# Build migration tool
+go build -o migrate-tool ./cmd/migrate
+
+# Preview migration (dry run)
+./migrate-tool --dry-run
+
+# Execute migration
+./migrate-tool
+```
+
+See `cmd/migrate/README.md` for details.
 
 ### Frontend Development
 - Edit components in `frontend/src/`
@@ -270,9 +318,9 @@ MyNewMethod("test").then(result => console.log(result))
 
 **Persistent Projects**: "Management" and "Internal Projects" are special projects auto-seeded on first run with is_persistent=1. These don't use the frontloading algorithm and require manual weekly entry creation via `CreateWeeklyEntry`.
 
-**Backup/Restore**: `CreateBackup` and `RestoreBackup` use Wails runtime dialogs for file selection. During restore, the current DB is closed, a temporary backup is created (`.pre-restore`), the restore is performed, and the DB is reopened. If restore fails, the temp backup is used to rollback.
+**Backup/Restore**: `CreateBackup` and `RestoreBackup` use Wails runtime dialogs for file selection. During restore, the current store is closed, a temporary backup is created (`.pre-restore`), the restore is performed, and the store is reloaded. If restore fails, the temp backup is used to rollback.
 
-**Search Functionality**: Search methods (`SearchProjects`, `SearchNotes`, `SearchGoals`, `SearchMeetings`, `SearchTasks`) use SQL LIKE queries with `%query%` pattern matching. Search results for notes, goals, meetings, and tasks include parent project names via JOIN queries.
+**Search Functionality**: Search methods (`SearchProjects`, `SearchNotes`, `SearchGoals`, `SearchMeetings`, `SearchTasks`) use case-insensitive string matching. Search results for notes, goals, meetings, and tasks include parent project names.
 
 **CSV Export**: Export methods return CSV strings (not files). Frontend must handle saving the returned string to a file. Export includes headers and properly formatted data with variance calculations.
 
@@ -281,7 +329,7 @@ MyNewMethod("test").then(result => console.log(result))
 ## Configuration Files
 
 - **wails.json**: Wails project config (frontend commands, app metadata)
-- **go.mod**: Go 1.24, Wails v2.11.0, modernc.org/sqlite
+- **go.mod**: Go 1.24, Wails v2.11.0
 - **frontend/package.json**: React 18, TypeScript, Vite, Tailwind, Recharts
 - **frontend/vite.config.js**: Vite configuration
 - **frontend/tailwind.config.js**: Tailwind CSS configuration
