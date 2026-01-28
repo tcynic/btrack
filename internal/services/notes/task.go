@@ -1,10 +1,8 @@
 package notes
 
 import (
-	"fmt"
 	"strings"
 
-	"btrack/internal/database"
 	"btrack/internal/models"
 )
 
@@ -14,90 +12,134 @@ func (s *Service) CreateTask(input models.CreateTaskInput) (*models.Task, error)
 		return nil, err
 	}
 
-	taskID, err := s.taskRepo.Create(
-		input.ProjectID,
-		input.SourceType,
-		input.SourceID,
-		input.Title,
-		input.Description,
-		input.Priority,
-		input.DueDate,
-	)
-	if err != nil {
+	task := &models.Task{
+		ProjectID:   input.ProjectID,
+		SourceType:  input.SourceType,
+		SourceID:    input.SourceID,
+		Title:       input.Title,
+		Description: input.Description,
+		Status:      models.TaskStatusPending,
+		Priority:    input.Priority,
+		DueDate:     input.DueDate,
+	}
+
+	if err := s.store.AddTask(input.ProjectID, task); err != nil {
 		return nil, err
 	}
 
-	return s.GetTask(taskID)
+	return task, nil
 }
 
 // GetTask returns a single task by ID
 func (s *Service) GetTask(id int64) (*models.Task, error) {
-	return s.taskRepo.GetByID(id)
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, t := range proj.Tasks {
+			if t.ID == id {
+				return &t, nil
+			}
+		}
+	}
+	return nil, models.NotFound("task")
 }
 
 // GetTasksByProject returns all tasks for a project
 func (s *Service) GetTasksByProject(projectID int64) ([]models.Task, error) {
-	tasks, err := s.taskRepo.GetByProject(projectID)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(tasks), nil
+	return s.store.GetTasks(projectID)
 }
 
 // GetTasksBySource returns tasks linked to a specific source (meeting or note)
 func (s *Service) GetTasksBySource(sourceType string, sourceID int64) ([]models.Task, error) {
-	tasks, err := s.taskRepo.GetBySource(sourceType, sourceID)
-	if err != nil {
-		return nil, err
+	projects, _ := s.store.GetAllProjects(false)
+	var tasks []models.Task
+	for _, proj := range projects {
+		for _, t := range proj.Tasks {
+			if t.SourceType == sourceType && t.SourceID == sourceID {
+				tasks = append(tasks, t)
+			}
+		}
 	}
-	return database.EnsureSlice(tasks), nil
+	return tasks, nil
 }
 
 // GetAllTasks returns all tasks across projects with optional filters
 func (s *Service) GetAllTasks(statusFilter string, projectIDFilter int64) ([]models.TaskWithContext, error) {
-	query := database.SelectAllTasksFiltered
-	args := []interface{}{}
-
-	// Build WHERE clauses for filters
-	var conditions []string
-	if statusFilter != "" {
-		conditions = append(conditions, "t.status = ?")
-		args = append(args, statusFilter)
-	}
-	if projectIDFilter > 0 {
-		conditions = append(conditions, "t.project_id = ?")
-		args = append(args, projectIDFilter)
-	}
-
-	// Add filter conditions to query
-	if len(conditions) > 0 {
-		query += " AND " + strings.Join(conditions, " AND ")
-	}
-
-	// Add ordering
-	query += ` ORDER BY CASE t.status
-		WHEN 'in_progress' THEN 1
-		WHEN 'pending' THEN 2
-		WHEN 'completed' THEN 3
-		WHEN 'cancelled' THEN 4
-	END, t.priority DESC, t.due_date ASC`
-
-	rows, err := s.db.Query(query, args...)
+	projects, err := s.store.GetAllProjects(false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query tasks: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
 	var tasks []models.TaskWithContext
-	for rows.Next() {
-		t, err := models.ScanTaskWithContext(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan task: %w", err)
+	for _, proj := range projects {
+		for _, t := range proj.Tasks {
+			// Apply filters
+			if statusFilter != "" && t.Status != statusFilter {
+				continue
+			}
+			if projectIDFilter > 0 && t.ProjectID != projectIDFilter {
+				continue
+			}
+
+			// Get source name based on type
+			var sourceName string
+			if t.SourceType == "meeting" {
+				for _, m := range proj.Meetings {
+					if m.ID == t.SourceID {
+						sourceName = m.Title
+						break
+					}
+				}
+			} else if t.SourceType == "note" {
+				for _, n := range proj.Notes {
+					if n.ID == t.SourceID {
+						sourceName = n.Title
+						break
+					}
+				}
+			}
+
+			tasks = append(tasks, models.TaskWithContext{
+				Task:        t,
+				ProjectName: proj.Name,
+				SourceName:  sourceName,
+			})
 		}
-		tasks = append(tasks, *t)
 	}
 
-	return database.EnsureSlice(tasks), nil
+	// Sort: in_progress > pending > completed, then by priority desc, then by due date
+	// Simple sort implementation
+	for i := 0; i < len(tasks); i++ {
+		for j := i + 1; j < len(tasks); j++ {
+			if taskSortLess(tasks[j], tasks[i]) {
+				tasks[i], tasks[j] = tasks[j], tasks[i]
+			}
+		}
+	}
+
+	return tasks, nil
+}
+
+func taskSortLess(a, b models.TaskWithContext) bool {
+	// Status priority
+	statusOrder := map[string]int{
+		"in_progress": 1,
+		"pending":     2,
+		"completed":   3,
+	}
+	aStatus := statusOrder[a.Status]
+	bStatus := statusOrder[b.Status]
+	if aStatus != bStatus {
+		return aStatus < bStatus
+	}
+	// Priority (high > medium > low)
+	priorityOrder := map[string]int{"high": 3, "medium": 2, "low": 1}
+	aPrio := priorityOrder[a.Priority]
+	bPrio := priorityOrder[b.Priority]
+	if aPrio != bPrio {
+		return aPrio > bPrio
+	}
+	// Due date
+	return a.DueDate < b.DueDate
 }
 
 // UpdateTask updates an existing task
@@ -106,19 +148,46 @@ func (s *Service) UpdateTask(input models.UpdateTaskInput) (*models.Task, error)
 		return nil, err
 	}
 
-	err := s.taskRepo.Update(
-		input.ID,
-		input.Title,
-		input.Description,
-		input.Status,
-		input.Priority,
-		input.DueDate,
-	)
-	if err != nil {
+	// Find the project this task belongs to
+	var projectID int64
+	var sourceType string
+	var sourceID int64
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, t := range proj.Tasks {
+			if t.ID == input.ID {
+				projectID = proj.ID
+				sourceType = t.SourceType
+				sourceID = t.SourceID
+				break
+			}
+		}
+		if projectID > 0 {
+			break
+		}
+	}
+
+	if projectID == 0 {
+		return nil, models.NotFound("task")
+	}
+
+	task := &models.Task{
+		ID:          input.ID,
+		ProjectID:   projectID,
+		SourceType:  sourceType,
+		SourceID:    sourceID,
+		Title:       input.Title,
+		Description: input.Description,
+		Status:      input.Status,
+		Priority:    input.Priority,
+		DueDate:     input.DueDate,
+	}
+
+	if err := s.store.UpdateTask(projectID, task); err != nil {
 		return nil, err
 	}
 
-	return s.GetTask(input.ID)
+	return task, nil
 }
 
 // UpdateTaskStatus updates only the status of a task
@@ -127,25 +196,45 @@ func (s *Service) UpdateTaskStatus(id int64, status string) (*models.Task, error
 		return nil, models.ValidationError("status", "invalid status value")
 	}
 
-	err := s.taskRepo.UpdateStatus(id, status)
+	// Get the task first
+	task, err := s.GetTask(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.GetTask(id)
+	// Update status
+	task.Status = status
+
+	// Find project and update
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, t := range proj.Tasks {
+			if t.ID == id {
+				if err := s.store.UpdateTask(proj.ID, task); err != nil {
+					return nil, err
+				}
+				return task, nil
+			}
+		}
+	}
+
+	return nil, models.NotFound("task")
 }
 
 // DeleteTask removes a task
 func (s *Service) DeleteTask(id int64) error {
-	return s.taskRepo.Delete(id)
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, t := range proj.Tasks {
+			if t.ID == id {
+				return s.store.DeleteTask(proj.ID, id)
+			}
+		}
+	}
+	return models.NotFound("task")
 }
 
 // SearchTasks searches for tasks by title or description
 func (s *Service) SearchTasks(query string) ([]models.TaskWithContext, error) {
-	searchPattern := "%" + query + "%"
-	tasks, err := s.taskRepo.Search(searchPattern)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(tasks), nil
+	return s.store.SearchAllTasks(query)
 }
