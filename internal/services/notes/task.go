@@ -53,6 +53,10 @@ func (s *Service) GetTasksBySource(sourceType string, sourceID int64) ([]models.
 			}
 		}
 	}
+	// Ensure we return empty array, not nil
+	if tasks == nil {
+		tasks = []models.Task{}
+	}
 	return tasks, nil
 }
 
