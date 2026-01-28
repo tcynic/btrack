@@ -2,28 +2,22 @@ package project
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
-	"btrack/internal/database"
 	"btrack/internal/models"
-	"btrack/internal/repository"
+	"btrack/internal/store"
 )
 
 // Service handles project-related business logic
 type Service struct {
-	projectRepo *repository.ProjectRepository
-	entryRepo   *repository.WeeklyEntryRepository
-	db          *sql.DB
+	store *store.Store
 }
 
 // NewService creates a new project service
-func NewService(projectRepo *repository.ProjectRepository, entryRepo *repository.WeeklyEntryRepository, db *sql.DB) *Service {
+func NewService(s *store.Store) *Service {
 	return &Service{
-		projectRepo: projectRepo,
-		entryRepo:   entryRepo,
-		db:          db,
+		store: s,
 	}
 }
 
@@ -39,53 +33,26 @@ func (s *Service) Create(ctx context.Context, input models.CreateProjectInput) (
 		return nil, fmt.Errorf("failed to calculate distribution: %w", err)
 	}
 
-	// Start transaction
-	tx, err := s.db.Begin()
+	// Create project
+	project, err := s.store.CreateProject(input)
 	if err != nil {
-		return nil, models.DatabaseError(err)
-	}
-	defer tx.Rollback()
-
-	// Insert project
-	result, err := tx.Exec(database.InsertProject,
-		input.Name,
-		input.TotalSoldHours,
-		input.SpecialistHours,
-		input.StartDate,
-		input.EndDate,
-	)
-	if err != nil {
-		return nil, models.DatabaseError(err)
+		return nil, err
 	}
 
-	projectID, err := result.LastInsertId()
-	if err != nil {
-		return nil, models.DatabaseError(err)
-	}
-
-	// Insert weekly entries
+	// Add weekly entries
 	for _, entry := range entries {
-		_, err := tx.Exec(database.InsertWeeklyEntry,
-			projectID,
-			entry.WeekStartDate,
-			entry.WeekNumber,
-			entry.PlannedHours,
-		)
+		_, err := s.store.AddWeeklyEntry(project.ID, entry)
 		if err != nil {
-			return nil, models.DatabaseError(err)
+			return nil, fmt.Errorf("failed to add weekly entry: %w", err)
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, models.DatabaseError(err)
-	}
-
-	return s.GetByID(ctx, projectID)
+	return s.GetByID(ctx, project.ID)
 }
 
 // GetByID retrieves a project with stats
 func (s *Service) GetByID(ctx context.Context, id int64) (*models.ProjectWithStats, error) {
-	p, err := s.projectRepo.GetByID(id)
+	p, err := s.store.GetProject(id)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +63,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.ProjectWithSta
 	}
 
 	projectWithStats := &models.ProjectWithStats{
-		Project:           *p,
+		Project:           p.Project,
 		MyHours:           p.TotalSoldHours - p.SpecialistHours,
 		TotalWeeks:        stats.TotalWeeks,
 		TotalPlannedHours: stats.TotalPlanned,
@@ -108,7 +75,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.ProjectWithSta
 
 // GetAll retrieves all projects with stats
 func (s *Service) GetAll(ctx context.Context, activeOnly bool) ([]models.ProjectWithStats, error) {
-	projects, err := s.projectRepo.GetAll(activeOnly)
+	projects, err := s.store.GetAllProjects(activeOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +88,7 @@ func (s *Service) GetAll(ctx context.Context, activeOnly bool) ([]models.Project
 		}
 
 		projectWithStats := models.ProjectWithStats{
-			Project:           p,
+			Project:           p.Project,
 			MyHours:           p.TotalSoldHours - p.SpecialistHours,
 			TotalWeeks:        stats.TotalWeeks,
 			TotalPlannedHours: stats.TotalPlanned,
@@ -139,8 +106,7 @@ func (s *Service) GetAll(ctx context.Context, activeOnly bool) ([]models.Project
 
 // Search searches projects by name
 func (s *Service) Search(ctx context.Context, query string) ([]models.Project, error) {
-	searchPattern := "%" + query + "%"
-	return s.projectRepo.Search(searchPattern)
+	return s.store.SearchProjects(query)
 }
 
 // getStats retrieves statistics for a project
@@ -151,7 +117,7 @@ func (s *Service) getStats(projectID int64) (struct{ TotalPlanned, TotalActual, 
 		TotalWeeks   int
 	}
 
-	totalPlanned, totalActual, totalWeeks, err := s.projectRepo.GetStats(projectID)
+	totalPlanned, totalActual, totalWeeks, err := s.store.GetProjectStats(projectID)
 	if err != nil {
 		return stats, err
 	}

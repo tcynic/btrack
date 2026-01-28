@@ -6,12 +6,11 @@ import "fmt"
 type ErrorCode string
 
 const (
-	ErrCodeNotFound    ErrorCode = "NOT_FOUND"
-	ErrCodeValidation  ErrorCode = "VALIDATION"
-	ErrCodeDatabase    ErrorCode = "DATABASE"
-	ErrCodeConflict    ErrorCode = "CONFLICT"
-	ErrCodeForbidden   ErrorCode = "FORBIDDEN"
-	ErrCodeInternal    ErrorCode = "INTERNAL"
+	ErrCodeNotFound   ErrorCode = "NOT_FOUND"
+	ErrCodeValidation ErrorCode = "VALIDATION"
+	ErrCodeConflict   ErrorCode = "CONFLICT"
+	ErrCodeForbidden  ErrorCode = "FORBIDDEN"
+	ErrCodeInternal   ErrorCode = "INTERNAL"
 )
 
 // AppError represents a structured application error
@@ -49,15 +48,6 @@ func ValidationError(field, message string) *AppError {
 		Code:    ErrCodeValidation,
 		Message: message,
 		Field:   field,
-	}
-}
-
-// DatabaseError creates a DATABASE error
-func DatabaseError(err error) *AppError {
-	return &AppError{
-		Code:    ErrCodeDatabase,
-		Message: "Database operation failed",
-		Err:     err,
 	}
 }
 

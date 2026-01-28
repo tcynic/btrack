@@ -12,20 +12,20 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// BackupInfo provides information about the current database
+// BackupInfo provides information about the current data file
 type BackupInfo struct {
 	DatabasePath string `json:"databasePath"`
 	DatabaseSize int64  `json:"databaseSize"` // in bytes
 	LastModified string `json:"lastModified"`
 }
 
-// GetBackupInfo returns information about the current database
+// GetBackupInfo returns information about the current data file
 func (s *Service) GetBackupInfo() (*BackupInfo, error) {
 	dbPath := getDBPath()
 	
 	info, err := os.Stat(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database info: %w", err)
+		return nil, fmt.Errorf("failed to get data file info: %w", err)
 	}
 
 	return &BackupInfo{
@@ -35,17 +35,17 @@ func (s *Service) GetBackupInfo() (*BackupInfo, error) {
 	}, nil
 }
 
-// CreateBackup creates a backup of the database to a user-selected location
+// CreateBackup creates a backup of the data file to a user-selected location
 func (s *Service) CreateBackup() (string, error) {
 	// Prompt user to select backup location
-	defaultName := fmt.Sprintf("btrack-backup-%s.db", time.Now().Format("2006-01-02-150405"))
+	defaultName := fmt.Sprintf("btrack-backup-%s.json", time.Now().Format("2006-01-02-150405"))
 	savePath, err := runtime.SaveFileDialog(s.ctx, runtime.SaveDialogOptions{
 		DefaultFilename: defaultName,
-		Title:           "Save Database Backup",
+		Title:           "Save Data Backup",
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Database Files (*.db)",
-				Pattern:     "*.db",
+				DisplayName: "JSON Files (*.json)",
+				Pattern:     "*.json",
 			},
 		},
 	})
@@ -59,26 +59,26 @@ func (s *Service) CreateBackup() (string, error) {
 		return "", nil
 	}
 
-	// Get source database path
+	// Get source data file path
 	dbPath := getDBPath()
 	
-	// Copy database file
+	// Copy data file
 	if err := copyFile(dbPath, savePath); err != nil {
-		return "", fmt.Errorf("failed to copy database: %w", err)
+		return "", fmt.Errorf("failed to copy data file: %w", err)
 	}
 
 	return savePath, nil
 }
 
-// RestoreBackup restores the database from a backup file
-func (s *Service) RestoreBackup(dbCloser func() error, dbReopener func() error) error {
+// RestoreBackup restores the data file from a backup (store is automatically reloaded)
+func (s *Service) RestoreBackup() error {
 	// Prompt user to select backup file
 	backupPath, err := runtime.OpenFileDialog(s.ctx, runtime.OpenDialogOptions{
 		Title: "Select Backup File",
 		Filters: []runtime.FileFilter{
 			{
-				DisplayName: "Database Files (*.db)",
-				Pattern:     "*.db",
+				DisplayName: "JSON Files (*.json)",
+				Pattern:     "*.json",
 			},
 		},
 	})
@@ -102,24 +102,18 @@ func (s *Service) RestoreBackup(dbCloser func() error, dbReopener func() error) 
 		log.Printf("Warning: auto-backup failed before restore: %v", err)
 	}
 
-	// Get current database path
+	// Get current data file path
 	dbPath := getDBPath()
 	
-	// Create a temporary backup of current database before restore
+	// Create a temporary backup of current data file before restore
 	tempBackup := dbPath + ".pre-restore"
 	if err := copyFile(dbPath, tempBackup); err != nil {
 		return fmt.Errorf("failed to create temporary backup: %w", err)
 	}
 
-	// Close current database connection
-	if err := dbCloser(); err != nil {
-		os.Remove(tempBackup)
-		return fmt.Errorf("failed to close database: %w", err)
-	}
-
-	// Copy backup file to database location
+	// Copy backup file to data file location
 	if err := copyFile(backupPath, dbPath); err != nil {
-		// Try to restore original database
+		// Try to restore original data file
 		copyFile(tempBackup, dbPath)
 		os.Remove(tempBackup)
 		return fmt.Errorf("failed to restore backup: %w", err)
@@ -128,9 +122,9 @@ func (s *Service) RestoreBackup(dbCloser func() error, dbReopener func() error) 
 	// Remove temporary backup
 	os.Remove(tempBackup)
 
-	// Reopen database connection
-	if err := dbReopener(); err != nil {
-		return fmt.Errorf("failed to reopen database: %w", err)
+	// Reload store from restored file
+	if err := s.store.Load(); err != nil {
+		return fmt.Errorf("failed to reload data: %w", err)
 	}
 
 	return nil
@@ -147,7 +141,7 @@ func (s *Service) AutoBackup() error {
 	}
 	
 	// Create backup with timestamp
-	backupName := fmt.Sprintf("auto-backup-%s.db", time.Now().Format("2006-01-02-150405"))
+	backupName := fmt.Sprintf("auto-backup-%s.json", time.Now().Format("2006-01-02-150405"))
 	backupPath := filepath.Join(backupDir, backupName)
 	
 	if err := copyFile(dbPath, backupPath); err != nil {
@@ -171,7 +165,7 @@ func getDBPath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(homeDir, "Library", "Application Support", "btrack", "btrack.db")
+	return filepath.Join(homeDir, "Library", "Application Support", "btrack", "btrack-data.json")
 }
 
 func copyFile(src, dst string) error {
@@ -207,7 +201,7 @@ func cleanOldBackups(backupDir string, keepCount int) error {
 	
 	var backups []backupFile
 	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".db" {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
 		

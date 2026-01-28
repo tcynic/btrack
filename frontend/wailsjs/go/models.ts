@@ -640,68 +640,7 @@ export namespace notes {
 
 }
 
-export namespace system {
-	
-	export class BackupInfo {
-	    databasePath: string;
-	    databaseSize: number;
-	    lastModified: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new BackupInfo(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.databasePath = source["databasePath"];
-	        this.databaseSize = source["databaseSize"];
-	        this.lastModified = source["lastModified"];
-	    }
-	}
-	export class CreateProjectFromTemplateInput {
-	    templateId: number;
-	    name: string;
-	    startDate: string;
-	    endDate: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new CreateProjectFromTemplateInput(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.templateId = source["templateId"];
-	        this.name = source["name"];
-	        this.startDate = source["startDate"];
-	        this.endDate = source["endDate"];
-	    }
-	}
-	export class ProjectTemplate {
-	    id: number;
-	    name: string;
-	    totalSoldHours: number;
-	    specialistHours: number;
-	    createdAt: string;
-	    updatedAt: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProjectTemplate(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.name = source["name"];
-	        this.totalSoldHours = source["totalSoldHours"];
-	        this.specialistHours = source["specialistHours"];
-	        this.createdAt = source["createdAt"];
-	        this.updatedAt = source["updatedAt"];
-	    }
-	}
-
-}
-
-export namespace tracking {
+export namespace store {
 	
 	export class CapacityWeek {
 	    weekStart: string;
@@ -721,30 +660,6 @@ export namespace tracking {
 	        this.actualHours = source["actualHours"];
 	        this.utilization = source["utilization"];
 	        this.projectCount = source["projectCount"];
-	    }
-	}
-	export class DashboardSummary {
-	    totalActiveProjects: number;
-	    atRiskProjects: number;
-	    totalPlannedThisWeek: number;
-	    totalActualThisWeek: number;
-	    totalPlannedNextWeek: number;
-	    totalGoals: number;
-	    completedGoals: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new DashboardSummary(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.totalActiveProjects = source["totalActiveProjects"];
-	        this.atRiskProjects = source["atRiskProjects"];
-	        this.totalPlannedThisWeek = source["totalPlannedThisWeek"];
-	        this.totalActualThisWeek = source["totalActualThisWeek"];
-	        this.totalPlannedNextWeek = source["totalPlannedNextWeek"];
-	        this.totalGoals = source["totalGoals"];
-	        this.completedGoals = source["completedGoals"];
 	    }
 	}
 	export class DashboardWeekData {
@@ -785,6 +700,28 @@ export namespace tracking {
 	        this.variance = source["variance"];
 	    }
 	}
+	export class Template {
+	    id: number;
+	    name: string;
+	    total_sold_hours: number;
+	    specialist_hours: number;
+	    created_at: string;
+	    updated_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Template(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.total_sold_hours = source["total_sold_hours"];
+	        this.specialist_hours = source["specialist_hours"];
+	        this.created_at = source["created_at"];
+	        this.updated_at = source["updated_at"];
+	    }
+	}
 	export class VarianceReport {
 	    projectId: number;
 	    projectName: string;
@@ -805,6 +742,74 @@ export namespace tracking {
 	        this.actual = source["actual"];
 	        this.variance = source["variance"];
 	        this.percentage = source["percentage"];
+	    }
+	}
+
+}
+
+export namespace system {
+	
+	export class BackupInfo {
+	    databasePath: string;
+	    databaseSize: number;
+	    lastModified: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.databasePath = source["databasePath"];
+	        this.databaseSize = source["databaseSize"];
+	        this.lastModified = source["lastModified"];
+	    }
+	}
+	export class CreateProjectFromTemplateInput {
+	    templateId: number;
+	    name: string;
+	    startDate: string;
+	    endDate: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CreateProjectFromTemplateInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.templateId = source["templateId"];
+	        this.name = source["name"];
+	        this.startDate = source["startDate"];
+	        this.endDate = source["endDate"];
+	    }
+	}
+
+}
+
+export namespace tracking {
+	
+	export class DashboardSummary {
+	    totalActiveProjects: number;
+	    atRiskProjects: number;
+	    totalPlannedThisWeek: number;
+	    totalActualThisWeek: number;
+	    totalPlannedNextWeek: number;
+	    totalGoals: number;
+	    completedGoals: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DashboardSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.totalActiveProjects = source["totalActiveProjects"];
+	        this.atRiskProjects = source["atRiskProjects"];
+	        this.totalPlannedThisWeek = source["totalPlannedThisWeek"];
+	        this.totalActualThisWeek = source["totalActualThisWeek"];
+	        this.totalPlannedNextWeek = source["totalPlannedNextWeek"];
+	        this.totalGoals = source["totalGoals"];
+	        this.completedGoals = source["completedGoals"];
 	    }
 	}
 

@@ -1,9 +1,5 @@
 package models
 
-import (
-	"btrack/internal/database"
-)
-
 // Goal status constants
 const (
 	GoalStatusPending    = "pending"
@@ -51,8 +47,8 @@ func ScanGoal(scan func(dest ...any) error) (*Goal, error) {
 		return nil, err
 	}
 
-	g.Description = database.NullableString(description)
-	g.TargetDate = database.NullableString(targetDate)
+	g.Description = NullableString(description)
+	g.TargetDate = NullableString(targetDate)
 	g.CreatedAt = createdAt
 	g.UpdatedAt = updatedAt
 
@@ -81,8 +77,8 @@ func ScanGoalWithProject(scan func(dest ...any) error) (*GoalWithProject, error)
 		return nil, err
 	}
 
-	g.Description = database.NullableString(description)
-	g.TargetDate = database.NullableString(targetDate)
+	g.Description = NullableString(description)
+	g.TargetDate = NullableString(targetDate)
 	g.CreatedAt = createdAt
 	g.UpdatedAt = updatedAt
 
@@ -109,7 +105,7 @@ type UpdateGoalInput struct {
 // Validate checks if the CreateGoalInput is valid
 func (c *CreateGoalInput) Validate() error {
 	if c.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	return nil
 }
@@ -117,7 +113,7 @@ func (c *CreateGoalInput) Validate() error {
 // Validate checks if the UpdateGoalInput is valid
 func (u *UpdateGoalInput) Validate() error {
 	if u.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	if u.Status != "" && u.Status != GoalStatusPending && u.Status != GoalStatusInProgress && u.Status != GoalStatusCompleted && u.Status != GoalStatusCancelled {
 		return ErrInvalidStatus

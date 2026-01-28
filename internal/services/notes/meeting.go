@@ -2,8 +2,8 @@ package notes
 
 import (
 	"fmt"
+	"time"
 
-	"btrack/internal/database"
 	"btrack/internal/models"
 )
 
@@ -13,33 +13,35 @@ func (s *Service) CreateMeeting(input models.CreateMeetingInput) (*models.Meetin
 		return nil, err
 	}
 
-	meetingID, err := s.meetingRepo.Create(
-		input.ProjectID,
-		input.Title,
-		input.MeetingDate,
-		input.DurationMinutes,
-		input.Attendees,
-		input.Notes,
-	)
-	if err != nil {
-		return nil, err
+	meeting := models.Meeting{
+		ProjectID:       input.ProjectID,
+		Title:           input.Title,
+		MeetingDate:     input.MeetingDate,
+		DurationMinutes: input.DurationMinutes,
+		Attendees:       input.Attendees,
+		Notes:           input.Notes,
 	}
 
-	return s.GetMeeting(meetingID)
+	return s.store.AddMeeting(input.ProjectID, meeting)
 }
 
 // GetMeetings returns all meetings for a project
 func (s *Service) GetMeetings(projectID int64) ([]models.Meeting, error) {
-	meetings, err := s.meetingRepo.GetByProject(projectID)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(meetings), nil
+	return s.store.GetMeetings(projectID)
 }
 
 // GetMeeting returns a single meeting by ID
 func (s *Service) GetMeeting(id int64) (*models.Meeting, error) {
-	return s.meetingRepo.GetByID(id)
+	// Need to find which project this meeting belongs to
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, m := range proj.Meetings {
+			if m.ID == id {
+				return &m, nil
+			}
+		}
+	}
+	return nil, models.NotFound("meeting")
 }
 
 // UpdateMeeting updates an existing meeting
@@ -48,84 +50,125 @@ func (s *Service) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meetin
 		return nil, err
 	}
 
-	err := s.meetingRepo.Update(
-		input.ID,
-		input.Title,
-		input.MeetingDate,
-		input.DurationMinutes,
-		input.Attendees,
-		input.Notes,
-	)
-	if err != nil {
+	// Find the project this meeting belongs to
+	var projectID int64
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, m := range proj.Meetings {
+			if m.ID == input.ID {
+				projectID = proj.ID
+				break
+			}
+		}
+		if projectID > 0 {
+			break
+		}
+	}
+
+	if projectID == 0 {
+		return nil, models.NotFound("meeting")
+	}
+
+	meeting := models.Meeting{
+		ID:              input.ID,
+		ProjectID:       projectID,
+		Title:           input.Title,
+		MeetingDate:     input.MeetingDate,
+		DurationMinutes: input.DurationMinutes,
+		Attendees:       input.Attendees,
+		Notes:           input.Notes,
+	}
+
+	if err := s.store.UpdateMeeting(projectID, meeting); err != nil {
 		return nil, err
 	}
 
-	return s.GetMeeting(input.ID)
+	return &meeting, nil
 }
 
 // DeleteMeeting removes a meeting (also deletes associated tasks)
 func (s *Service) DeleteMeeting(id int64) error {
-	// First delete associated tasks
-	if err := s.taskRepo.DeleteBySource("meeting", id); err != nil {
-		return err
+	// Find which project this meeting belongs to
+	var projectID int64
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, m := range proj.Meetings {
+			if m.ID == id {
+				projectID = proj.ID
+				// Delete associated tasks first
+				for _, task := range proj.Tasks {
+					if task.SourceType == "meeting" && task.SourceID != nil && *task.SourceID == id {
+						s.store.DeleteTask(proj.ID, task.ID)
+					}
+				}
+				break
+			}
+		}
+		if projectID > 0 {
+			break
+		}
 	}
 
-	return s.meetingRepo.Delete(id)
+	if projectID == 0 {
+		return models.NotFound("meeting")
+	}
+
+	return s.store.DeleteMeeting(projectID, id)
 }
 
 // GetMeetingsByDate returns all meetings for a specific date across all projects
 func (s *Service) GetMeetingsByDate(date string) ([]models.MeetingWithProject, error) {
-	rows, err := s.db.Query(database.SelectMeetingsByDate, date)
+	projects, err := s.store.GetAllProjects(false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query meetings by date: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
 	var meetings []models.MeetingWithProject
-	for rows.Next() {
-		m, err := models.ScanMeetingWithProject(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan meeting: %w", err)
+	for _, proj := range projects {
+		for _, m := range proj.Meetings {
+			if m.MeetingDate == date {
+				meetings = append(meetings, models.MeetingWithProject{
+					Meeting:     m,
+					ProjectName: proj.Name,
+				})
+			}
 		}
-		meetings = append(meetings, *m)
 	}
 
-	return database.EnsureSlice(meetings), nil
+	return meetings, nil
 }
 
 // GetMeetingsByWeek returns all meetings for a week (7-day period starting from weekStartDate)
 func (s *Service) GetMeetingsByWeek(weekStartDate string) ([]models.MeetingWithProject, error) {
 	// Calculate the end date (7 days after start)
-	startDate, err := database.ParseDate(weekStartDate)
+	startDate, err := time.Parse("2006-01-02", weekStartDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid week start date: %w", err)
 	}
 	endDate := startDate.AddDate(0, 0, 7)
 
-	rows, err := s.db.Query(database.SelectMeetingsByWeek, weekStartDate, endDate.Format("2006-01-02"))
+	projects, err := s.store.GetAllProjects(false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query meetings by week: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
 	var meetings []models.MeetingWithProject
-	for rows.Next() {
-		m, err := models.ScanMeetingWithProject(rows.Scan)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan meeting: %w", err)
+	for _, proj := range projects {
+		for _, m := range proj.Meetings {
+			meetDate, _ := time.Parse("2006-01-02", m.MeetingDate)
+			if (meetDate.Equal(startDate) || meetDate.After(startDate)) && meetDate.Before(endDate) {
+				meetings = append(meetings, models.MeetingWithProject{
+					Meeting:     m,
+					ProjectName: proj.Name,
+				})
+			}
 		}
-		meetings = append(meetings, *m)
 	}
 
-	return database.EnsureSlice(meetings), nil
+	return meetings, nil
 }
 
 // SearchMeetings searches for meetings by title, notes, or attendees
 func (s *Service) SearchMeetings(query string) ([]models.MeetingWithProject, error) {
-	searchPattern := "%" + query + "%"
-	meetings, err := s.meetingRepo.Search(searchPattern)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(meetings), nil
+	return s.store.SearchAllMeetings(query)
 }

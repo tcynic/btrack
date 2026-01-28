@@ -1,9 +1,6 @@
 package notes
 
 import (
-	"fmt"
-
-	"btrack/internal/database"
 	"btrack/internal/models"
 )
 
@@ -23,26 +20,33 @@ func (s *Service) CreateGoal(input models.CreateGoalInput) (*models.Goal, error)
 		return nil, err
 	}
 
-	goalID, err := s.goalRepo.Create(input.ProjectID, input.Title, input.Description, input.TargetDate)
-	if err != nil {
-		return nil, err
+	goal := models.Goal{
+		ProjectID:   input.ProjectID,
+		Title:       input.Title,
+		Description: input.Description,
+		Status:      models.GoalStatusPending,
+		TargetDate:  input.TargetDate,
 	}
 
-	return s.GetGoal(goalID)
+	return s.store.AddGoal(input.ProjectID, goal)
 }
 
 // GetGoals returns all goals for a project
 func (s *Service) GetGoals(projectID int64) ([]models.Goal, error) {
-	goals, err := s.goalRepo.GetByProject(projectID)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(goals), nil
+	return s.store.GetGoals(projectID)
 }
 
 // GetGoal returns a single goal by ID
 func (s *Service) GetGoal(id int64) (*models.Goal, error) {
-	return s.goalRepo.GetByID(id)
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, g := range proj.Goals {
+			if g.ID == id {
+				return &g, nil
+			}
+		}
+	}
+	return nil, models.NotFound("goal")
 }
 
 // UpdateGoal updates an existing goal
@@ -56,12 +60,39 @@ func (s *Service) UpdateGoal(input models.UpdateGoalInput) (*models.Goal, error)
 		input.Status = models.GoalStatusPending
 	}
 
-	err := s.goalRepo.Update(input.ID, input.Title, input.Description, input.Status, input.TargetDate)
-	if err != nil {
+	// Find the project this goal belongs to
+	var projectID int64
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, g := range proj.Goals {
+			if g.ID == input.ID {
+				projectID = proj.ID
+				break
+			}
+		}
+		if projectID > 0 {
+			break
+		}
+	}
+
+	if projectID == 0 {
+		return nil, models.NotFound("goal")
+	}
+
+	goal := models.Goal{
+		ID:          input.ID,
+		ProjectID:   projectID,
+		Title:       input.Title,
+		Description: input.Description,
+		Status:      input.Status,
+		TargetDate:  input.TargetDate,
+	}
+
+	if err := s.store.UpdateGoal(projectID, goal); err != nil {
 		return nil, err
 	}
 
-	return s.GetGoal(input.ID)
+	return &goal, nil
 }
 
 // UpdateGoalStatus updates only the status of a goal
@@ -70,45 +101,63 @@ func (s *Service) UpdateGoalStatus(id int64, status string) (*models.Goal, error
 		return nil, models.ValidationError("status", "invalid status value")
 	}
 
-	err := s.goalRepo.UpdateStatus(id, status)
+	// Get the goal first
+	goal, err := s.GetGoal(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return s.GetGoal(id)
+	// Update status
+	goal.Status = status
+
+	// Find project and update
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, g := range proj.Goals {
+			if g.ID == id {
+				if err := s.store.UpdateGoal(proj.ID, *goal); err != nil {
+					return nil, err
+				}
+				return goal, nil
+			}
+		}
+	}
+
+	return nil, models.NotFound("goal")
 }
 
 // DeleteGoal removes a goal
 func (s *Service) DeleteGoal(id int64) error {
-	return s.goalRepo.Delete(id)
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, g := range proj.Goals {
+			if g.ID == id {
+				return s.store.DeleteGoal(proj.ID, id)
+			}
+		}
+	}
+	return models.NotFound("goal")
 }
 
 // GetGoalStats returns statistics for a project's goals
 func (s *Service) GetGoalStats(projectID int64) (*GoalStats, error) {
-	rows, err := s.db.Query(database.SelectGoalStatsByProject, projectID)
+	goals, err := s.store.GetGoals(projectID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query goal stats: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
 	stats := &GoalStats{}
-	for rows.Next() {
-		var status string
-		var count int
-		if err := rows.Scan(&status, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan goal stat: %w", err)
-		}
-
-		stats.Total += count
-		switch status {
+	for _, goal := range goals {
+		stats.Total++
+		switch goal.Status {
 		case models.GoalStatusPending:
-			stats.Pending = count
+			stats.Pending++
 		case models.GoalStatusInProgress:
-			stats.InProgress = count
+			stats.InProgress++
 		case models.GoalStatusCompleted:
-			stats.Completed = count
+			stats.Completed++
 		case models.GoalStatusCancelled:
-			stats.Cancelled = count
+			stats.Cancelled++
 		}
 	}
 
@@ -122,10 +171,5 @@ func (s *Service) GetGoalStats(projectID int64) (*GoalStats, error) {
 
 // SearchGoals searches for goals by title or description
 func (s *Service) SearchGoals(query string) ([]models.GoalWithProject, error) {
-	searchPattern := "%" + query + "%"
-	goals, err := s.goalRepo.Search(searchPattern)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(goals), nil
+	return s.store.SearchAllGoals(query)
 }

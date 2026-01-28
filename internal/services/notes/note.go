@@ -1,7 +1,6 @@
 package notes
 
 import (
-	"btrack/internal/database"
 	"btrack/internal/models"
 )
 
@@ -11,26 +10,31 @@ func (s *Service) CreateNote(input models.CreateNoteInput) (*models.Note, error)
 		return nil, err
 	}
 
-	noteID, err := s.noteRepo.Create(input.ProjectID, input.Title, input.Content)
-	if err != nil {
-		return nil, err
+	note := models.Note{
+		ProjectID: input.ProjectID,
+		Title:     input.Title,
+		Content:   input.Content,
 	}
 
-	return s.GetNote(noteID)
+	return s.store.AddNote(input.ProjectID, note)
 }
 
 // GetNotes returns all notes for a project
 func (s *Service) GetNotes(projectID int64) ([]models.Note, error) {
-	notes, err := s.noteRepo.GetByProject(projectID)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(notes), nil
+	return s.store.GetNotes(projectID)
 }
 
 // GetNote returns a single note by ID
 func (s *Service) GetNote(id int64) (*models.Note, error) {
-	return s.noteRepo.GetByID(id)
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, n := range proj.Notes {
+			if n.ID == id {
+				return &n, nil
+			}
+		}
+	}
+	return nil, models.NotFound("note")
 }
 
 // UpdateNote updates an existing note
@@ -39,30 +43,70 @@ func (s *Service) UpdateNote(input models.UpdateNoteInput) (*models.Note, error)
 		return nil, err
 	}
 
-	err := s.noteRepo.Update(input.ID, input.Title, input.Content)
-	if err != nil {
+	// Find the project this note belongs to
+	var projectID int64
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, n := range proj.Notes {
+			if n.ID == input.ID {
+				projectID = proj.ID
+				break
+			}
+		}
+		if projectID > 0 {
+			break
+		}
+	}
+
+	if projectID == 0 {
+		return nil, models.NotFound("note")
+	}
+
+	note := models.Note{
+		ID:        input.ID,
+		ProjectID: projectID,
+		Title:     input.Title,
+		Content:   input.Content,
+	}
+
+	if err := s.store.UpdateNote(projectID, note); err != nil {
 		return nil, err
 	}
 
-	return s.GetNote(input.ID)
+	return &note, nil
 }
 
 // DeleteNote removes a note (also deletes associated tasks)
 func (s *Service) DeleteNote(id int64) error {
-	// First delete associated tasks
-	if err := s.taskRepo.DeleteBySource("note", id); err != nil {
-		return err
+	// Find which project this note belongs to
+	var projectID int64
+	projects, _ := s.store.GetAllProjects(false)
+	for _, proj := range projects {
+		for _, n := range proj.Notes {
+			if n.ID == id {
+				projectID = proj.ID
+				// Delete associated tasks first
+				for _, task := range proj.Tasks {
+					if task.SourceType == "note" && task.SourceID != nil && *task.SourceID == id {
+						s.store.DeleteTask(proj.ID, task.ID)
+					}
+				}
+				break
+			}
+		}
+		if projectID > 0 {
+			break
+		}
 	}
 
-	return s.noteRepo.Delete(id)
+	if projectID == 0 {
+		return models.NotFound("note")
+	}
+
+	return s.store.DeleteNote(projectID, id)
 }
 
 // SearchNotes searches for notes by title or content
 func (s *Service) SearchNotes(query string) ([]models.NoteWithProject, error) {
-	searchPattern := "%" + query + "%"
-	notes, err := s.noteRepo.Search(searchPattern)
-	if err != nil {
-		return nil, err
-	}
-	return database.EnsureSlice(notes), nil
+	return s.store.SearchAllNotes(query)
 }

@@ -1,30 +1,17 @@
 package tracking
 
 import (
-	"database/sql"
-
-	"btrack/internal/repository"
+	"btrack/internal/store"
 )
 
 // Service handles tracking-related business logic
 type Service struct {
-	weeklyRepo  *repository.WeeklyEntryRepository
-	projectRepo *repository.ProjectRepository
-	goalRepo    *repository.GoalRepository
-	db          *sql.DB
+	store *store.Store
 }
 
 // NewService creates a new tracking service
-func NewService(
-	weeklyRepo *repository.WeeklyEntryRepository,
-	projectRepo *repository.ProjectRepository,
-	goalRepo *repository.GoalRepository,
-	db *sql.DB,
-) *Service {
+func NewService(s *store.Store) *Service {
 	return &Service{
-		weeklyRepo:  weeklyRepo,
-		projectRepo: projectRepo,
-		goalRepo:    goalRepo,
-		db:          db,
+		store: s,
 	}
 }

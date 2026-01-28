@@ -1,9 +1,5 @@
 package models
 
-import (
-	"btrack/internal/database"
-)
-
 // Note represents a project note with markdown content
 type Note struct {
 	ID        int64  `json:"id"`
@@ -39,7 +35,7 @@ func ScanNote(scan func(dest ...any) error) (*Note, error) {
 		return nil, err
 	}
 
-	n.Content = database.NullableString(content)
+	n.Content = NullableString(content)
 	n.CreatedAt = createdAt
 	n.UpdatedAt = updatedAt
 
@@ -66,7 +62,7 @@ func ScanNoteWithProject(scan func(dest ...any) error) (*NoteWithProject, error)
 		return nil, err
 	}
 
-	n.Content = database.NullableString(content)
+	n.Content = NullableString(content)
 	n.CreatedAt = createdAt
 	n.UpdatedAt = updatedAt
 

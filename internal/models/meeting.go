@@ -1,9 +1,5 @@
 package models
 
-import (
-	"btrack/internal/database"
-)
-
 // Meeting represents a project meeting
 type Meeting struct {
 	ID              int64  `json:"id"`
@@ -39,8 +35,8 @@ func ScanMeeting(scan func(dest ...any) error) (*Meeting, error) {
 		return nil, err
 	}
 
-	m.Attendees = database.NullableString(attendees)
-	m.Notes = database.NullableString(notes)
+	m.Attendees = NullableString(attendees)
+	m.Notes = NullableString(notes)
 	m.CreatedAt = createdAt
 	m.UpdatedAt = updatedAt
 
@@ -70,8 +66,8 @@ func ScanMeetingWithProject(scan func(dest ...any) error) (*MeetingWithProject, 
 		return nil, err
 	}
 
-	m.Attendees = database.NullableString(attendees)
-	m.Notes = database.NullableString(notes)
+	m.Attendees = NullableString(attendees)
+	m.Notes = NullableString(notes)
 	m.CreatedAt = createdAt
 	m.UpdatedAt = updatedAt
 
