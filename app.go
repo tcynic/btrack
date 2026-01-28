@@ -2,29 +2,19 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log"
 
-	"btrack/internal/database"
-	"btrack/internal/repository"
 	"btrack/internal/services/notes"
 	"btrack/internal/services/project"
 	"btrack/internal/services/system"
 	"btrack/internal/services/tracking"
+	"btrack/internal/store"
 )
 
 // App struct
 type App struct {
-	ctx context.Context
-	db  *sql.DB
-	
-	// Repositories
-	projects      *repository.ProjectRepository
-	weeklyEntries *repository.WeeklyEntryRepository
-	meetings      *repository.MeetingRepository
-	notes         *repository.NoteRepository
-	goals         *repository.GoalRepository
-	tasks         *repository.TaskRepository
+	ctx   context.Context
+	store *store.Store
 	
 	// Services
 	projectService  *project.Service
@@ -43,36 +33,29 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// Initialize database
-	db, err := database.Initialize()
-	if err != nil {
-		log.Printf("Failed to initialize database: %v", err)
+	// Initialize store
+	a.store = store.NewStore()
+	if err := a.store.Load(); err != nil {
+		log.Printf("Failed to load store: %v", err)
 		return
 	}
-	a.db = db
 	
-	// Initialize repositories
-	base := repository.NewRepository(db)
-	a.projects = repository.NewProjectRepository(base)
-	a.weeklyEntries = repository.NewWeeklyEntryRepository(base)
-	a.meetings = repository.NewMeetingRepository(base)
-	a.notes = repository.NewNoteRepository(base)
-	a.goals = repository.NewGoalRepository(base)
-	a.tasks = repository.NewTaskRepository(base)
+	// Initialize services with store
+	a.projectService = project.NewService(a.store)
+	a.trackingService = tracking.NewService(a.store)
+	a.notesService = notes.NewService(a.store)
+	a.systemService = system.NewService(a.projectService, a.store, ctx)
 	
-	// Initialize services
-	a.projectService = project.NewService(a.projects, a.weeklyEntries, db)
-	a.trackingService = tracking.NewService(a.weeklyEntries, a.projects, a.goals, db)
-	a.notesService = notes.NewService(a.meetings, a.notes, a.goals, a.tasks, db)
-	a.systemService = system.NewService(a.projectService, db, ctx)
-	
-	log.Println("Database initialized successfully")
+	log.Println("Store initialized successfully")
 }
 
 // shutdown is called when the app is closing
 func (a *App) shutdown(ctx context.Context) {
-	if a.db != nil {
-		a.db.Close()
-		log.Println("Database connection closed")
+	if a.store != nil {
+		if err := a.store.Save(); err != nil {
+			log.Printf("Failed to save store on shutdown: %v", err)
+		} else {
+			log.Println("Store saved successfully")
+		}
 	}
 }

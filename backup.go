@@ -1,7 +1,6 @@
 package main
 
 import (
-	"btrack/internal/database"
 	"btrack/internal/services/system"
 )
 
@@ -18,19 +17,9 @@ func (a *App) CreateBackup() (string, error) {
 	return a.systemService.CreateBackup()
 }
 
-// RestoreBackup restores the database from a backup file
+// RestoreBackup restores the data file from a backup
 func (a *App) RestoreBackup() error {
-	return a.systemService.RestoreBackup(
-		func() error { return a.db.Close() },
-		func() error {
-			db, err := database.Initialize()
-			if err != nil {
-				return err
-			}
-			a.db = db
-			return nil
-		},
-	)
+	return a.systemService.RestoreBackup()
 }
 
 // autoBackup creates an automatic backup before destructive operations
