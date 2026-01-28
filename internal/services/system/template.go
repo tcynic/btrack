@@ -32,17 +32,7 @@ func (s *Service) CreateTemplate(projectID int64, templateName string) (*Project
 	}
 
 	// Create template from project
-	template := &store.Template{
-		Name:            templateName,
-		TotalSoldHours:  project.TotalSoldHours,
-		SpecialistHours: project.SpecialistHours,
-	}
-
-	if err := s.store.CreateTemplate(template); err != nil {
-		return nil, err
-	}
-
-	return template, nil
+	return s.store.CreateTemplate(templateName, project.TotalSoldHours, project.SpecialistHours)
 }
 
 // GetTemplates returns all project templates

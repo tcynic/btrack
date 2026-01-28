@@ -147,7 +147,7 @@ func (s *Service) ensurePersistentEntries(weekStartDate string) error {
 				PlannedHours:  0,
 				ActualHours:   0,
 			}
-			if err := s.store.AddWeeklyEntry(proj.ID, &entry); err != nil {
+			if _, err := s.store.AddWeeklyEntry(proj.ID, entry); err != nil {
 				return fmt.Errorf("failed to create persistent entry: %w", err)
 			}
 		}

@@ -13,7 +13,7 @@ func (s *Service) CreateMeeting(input models.CreateMeetingInput) (*models.Meetin
 		return nil, err
 	}
 
-	meeting := &models.Meeting{
+	meeting := models.Meeting{
 		ProjectID:       input.ProjectID,
 		Title:           input.Title,
 		MeetingDate:     input.MeetingDate,
@@ -22,11 +22,7 @@ func (s *Service) CreateMeeting(input models.CreateMeetingInput) (*models.Meetin
 		Notes:           input.Notes,
 	}
 
-	if err := s.store.AddMeeting(input.ProjectID, meeting); err != nil {
-		return nil, err
-	}
-
-	return meeting, nil
+	return s.store.AddMeeting(input.ProjectID, meeting)
 }
 
 // GetMeetings returns all meetings for a project
@@ -73,7 +69,7 @@ func (s *Service) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meetin
 		return nil, models.NotFound("meeting")
 	}
 
-	meeting := &models.Meeting{
+	meeting := models.Meeting{
 		ID:              input.ID,
 		ProjectID:       projectID,
 		Title:           input.Title,
@@ -87,7 +83,7 @@ func (s *Service) UpdateMeeting(input models.UpdateMeetingInput) (*models.Meetin
 		return nil, err
 	}
 
-	return meeting, nil
+	return &meeting, nil
 }
 
 // DeleteMeeting removes a meeting (also deletes associated tasks)
@@ -101,7 +97,7 @@ func (s *Service) DeleteMeeting(id int64) error {
 				projectID = proj.ID
 				// Delete associated tasks first
 				for _, task := range proj.Tasks {
-					if task.SourceType == "meeting" && task.SourceID == id {
+					if task.SourceType == "meeting" && task.SourceID != nil && *task.SourceID == id {
 						s.store.DeleteTask(proj.ID, task.ID)
 					}
 				}

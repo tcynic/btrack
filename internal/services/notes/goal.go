@@ -20,7 +20,7 @@ func (s *Service) CreateGoal(input models.CreateGoalInput) (*models.Goal, error)
 		return nil, err
 	}
 
-	goal := &models.Goal{
+	goal := models.Goal{
 		ProjectID:   input.ProjectID,
 		Title:       input.Title,
 		Description: input.Description,
@@ -28,11 +28,7 @@ func (s *Service) CreateGoal(input models.CreateGoalInput) (*models.Goal, error)
 		TargetDate:  input.TargetDate,
 	}
 
-	if err := s.store.AddGoal(input.ProjectID, goal); err != nil {
-		return nil, err
-	}
-
-	return goal, nil
+	return s.store.AddGoal(input.ProjectID, goal)
 }
 
 // GetGoals returns all goals for a project
@@ -83,7 +79,7 @@ func (s *Service) UpdateGoal(input models.UpdateGoalInput) (*models.Goal, error)
 		return nil, models.NotFound("goal")
 	}
 
-	goal := &models.Goal{
+	goal := models.Goal{
 		ID:          input.ID,
 		ProjectID:   projectID,
 		Title:       input.Title,
@@ -96,7 +92,7 @@ func (s *Service) UpdateGoal(input models.UpdateGoalInput) (*models.Goal, error)
 		return nil, err
 	}
 
-	return goal, nil
+	return &goal, nil
 }
 
 // UpdateGoalStatus updates only the status of a goal
@@ -119,7 +115,7 @@ func (s *Service) UpdateGoalStatus(id int64, status string) (*models.Goal, error
 	for _, proj := range projects {
 		for _, g := range proj.Goals {
 			if g.ID == id {
-				if err := s.store.UpdateGoal(proj.ID, goal); err != nil {
+				if err := s.store.UpdateGoal(proj.ID, *goal); err != nil {
 					return nil, err
 				}
 				return goal, nil

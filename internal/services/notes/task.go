@@ -1,8 +1,6 @@
 package notes
 
 import (
-	"strings"
-
 	"btrack/internal/models"
 )
 
@@ -12,7 +10,7 @@ func (s *Service) CreateTask(input models.CreateTaskInput) (*models.Task, error)
 		return nil, err
 	}
 
-	task := &models.Task{
+	task := models.Task{
 		ProjectID:   input.ProjectID,
 		SourceType:  input.SourceType,
 		SourceID:    input.SourceID,
@@ -23,11 +21,7 @@ func (s *Service) CreateTask(input models.CreateTaskInput) (*models.Task, error)
 		DueDate:     input.DueDate,
 	}
 
-	if err := s.store.AddTask(input.ProjectID, task); err != nil {
-		return nil, err
-	}
-
-	return task, nil
+	return s.store.AddTask(input.ProjectID, task)
 }
 
 // GetTask returns a single task by ID
@@ -54,7 +48,7 @@ func (s *Service) GetTasksBySource(sourceType string, sourceID int64) ([]models.
 	var tasks []models.Task
 	for _, proj := range projects {
 		for _, t := range proj.Tasks {
-			if t.SourceType == sourceType && t.SourceID == sourceID {
+			if t.SourceType == sourceType && t.SourceID != nil && *t.SourceID == sourceID {
 				tasks = append(tasks, t)
 			}
 		}
@@ -80,18 +74,18 @@ func (s *Service) GetAllTasks(statusFilter string, projectIDFilter int64) ([]mod
 				continue
 			}
 
-			// Get source name based on type
+	// Get source name based on type
 			var sourceName string
-			if t.SourceType == "meeting" {
+			if t.SourceType == "meeting" && t.SourceID != nil {
 				for _, m := range proj.Meetings {
-					if m.ID == t.SourceID {
+					if m.ID == *t.SourceID {
 						sourceName = m.Title
 						break
 					}
 				}
-			} else if t.SourceType == "note" {
+			} else if t.SourceType == "note" && t.SourceID != nil {
 				for _, n := range proj.Notes {
-					if n.ID == t.SourceID {
+					if n.ID == *t.SourceID {
 						sourceName = n.Title
 						break
 					}
@@ -101,7 +95,7 @@ func (s *Service) GetAllTasks(statusFilter string, projectIDFilter int64) ([]mod
 			tasks = append(tasks, models.TaskWithContext{
 				Task:        t,
 				ProjectName: proj.Name,
-				SourceName:  sourceName,
+				SourceTitle: sourceName,
 			})
 		}
 	}
@@ -151,7 +145,7 @@ func (s *Service) UpdateTask(input models.UpdateTaskInput) (*models.Task, error)
 	// Find the project this task belongs to
 	var projectID int64
 	var sourceType string
-	var sourceID int64
+	var sourceID *int64
 	projects, _ := s.store.GetAllProjects(false)
 	for _, proj := range projects {
 		for _, t := range proj.Tasks {
@@ -171,7 +165,7 @@ func (s *Service) UpdateTask(input models.UpdateTaskInput) (*models.Task, error)
 		return nil, models.NotFound("task")
 	}
 
-	task := &models.Task{
+	task := models.Task{
 		ID:          input.ID,
 		ProjectID:   projectID,
 		SourceType:  sourceType,
@@ -187,7 +181,7 @@ func (s *Service) UpdateTask(input models.UpdateTaskInput) (*models.Task, error)
 		return nil, err
 	}
 
-	return task, nil
+	return &task, nil
 }
 
 // UpdateTaskStatus updates only the status of a task
@@ -210,7 +204,7 @@ func (s *Service) UpdateTaskStatus(id int64, status string) (*models.Task, error
 	for _, proj := range projects {
 		for _, t := range proj.Tasks {
 			if t.ID == id {
-				if err := s.store.UpdateTask(proj.ID, task); err != nil {
+				if err := s.store.UpdateTask(proj.ID, *task); err != nil {
 					return nil, err
 				}
 				return task, nil

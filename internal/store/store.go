@@ -15,12 +15,23 @@ type Store struct {
 	mu       sync.RWMutex
 }
 
-// New creates a new Store instance
+// New creates a new Store instance with a custom file path
 func New(filePath string) *Store {
 	return &Store{
 		data:     NewData(),
 		filePath: filePath,
 	}
+}
+
+// NewStore creates a new Store instance with the default file path
+func NewStore() *Store {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		// Fallback to current directory if home dir not available
+		return New("./btrack-data.json")
+	}
+	filePath := filepath.Join(homeDir, "Library", "Application Support", "btrack", "btrack-data.json")
+	return New(filePath)
 }
 
 // Load reads the JSON file from disk into memory

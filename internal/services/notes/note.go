@@ -10,17 +10,13 @@ func (s *Service) CreateNote(input models.CreateNoteInput) (*models.Note, error)
 		return nil, err
 	}
 
-	note := &models.Note{
+	note := models.Note{
 		ProjectID: input.ProjectID,
 		Title:     input.Title,
 		Content:   input.Content,
 	}
 
-	if err := s.store.AddNote(input.ProjectID, note); err != nil {
-		return nil, err
-	}
-
-	return note, nil
+	return s.store.AddNote(input.ProjectID, note)
 }
 
 // GetNotes returns all notes for a project
@@ -66,7 +62,7 @@ func (s *Service) UpdateNote(input models.UpdateNoteInput) (*models.Note, error)
 		return nil, models.NotFound("note")
 	}
 
-	note := &models.Note{
+	note := models.Note{
 		ID:        input.ID,
 		ProjectID: projectID,
 		Title:     input.Title,
@@ -77,7 +73,7 @@ func (s *Service) UpdateNote(input models.UpdateNoteInput) (*models.Note, error)
 		return nil, err
 	}
 
-	return note, nil
+	return &note, nil
 }
 
 // DeleteNote removes a note (also deletes associated tasks)
@@ -91,7 +87,7 @@ func (s *Service) DeleteNote(id int64) error {
 				projectID = proj.ID
 				// Delete associated tasks first
 				for _, task := range proj.Tasks {
-					if task.SourceType == "note" && task.SourceID == id {
+					if task.SourceType == "note" && task.SourceID != nil && *task.SourceID == id {
 						s.store.DeleteTask(proj.ID, task.ID)
 					}
 				}
