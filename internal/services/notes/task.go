@@ -100,6 +100,11 @@ func (s *Service) GetAllTasks(statusFilter string, projectIDFilter int64) ([]mod
 		}
 	}
 
+	// Ensure we return empty array, not nil
+	if tasks == nil {
+		tasks = []models.TaskWithContext{}
+	}
+
 	// Sort: in_progress > pending > completed, then by priority desc, then by due date
 	// Simple sort implementation
 	for i := 0; i < len(tasks); i++ {
