@@ -46,6 +46,6 @@ func NewData() *Data {
 			"template":      1,
 		},
 		Projects:  []ProjectWithNested{},
-		Templates: []models.Template{},
+		Templates: []Template{},
 	}
 }
