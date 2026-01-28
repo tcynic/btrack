@@ -1,9 +1,5 @@
 package models
 
-import (
-	"btrack/internal/database"
-)
-
 // Goal status constants
 const (
 	GoalStatusPending    = "pending"
@@ -51,8 +47,8 @@ func ScanGoal(scan func(dest ...any) error) (*Goal, error) {
 		return nil, err
 	}
 
-	g.Description = database.NullableString(description)
-	g.TargetDate = database.NullableString(targetDate)
+	g.Description = NullableString(description)
+	g.TargetDate = NullableString(targetDate)
 	g.CreatedAt = createdAt
 	g.UpdatedAt = updatedAt
 
@@ -81,8 +77,8 @@ func ScanGoalWithProject(scan func(dest ...any) error) (*GoalWithProject, error)
 		return nil, err
 	}
 
-	g.Description = database.NullableString(description)
-	g.TargetDate = database.NullableString(targetDate)
+	g.Description = NullableString(description)
+	g.TargetDate = NullableString(targetDate)
 	g.CreatedAt = createdAt
 	g.UpdatedAt = updatedAt
 

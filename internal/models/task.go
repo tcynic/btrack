@@ -1,9 +1,5 @@
 package models
 
-import (
-	"btrack/internal/database"
-)
-
 // Task status constants
 const (
 	TaskStatusPending    = "pending"
@@ -74,8 +70,8 @@ func ScanTask(scan func(dest ...any) error) (*Task, error) {
 	}
 
 	t.SourceID = sourceID
-	t.Description = database.NullableString(description)
-	t.DueDate = database.NullableString(dueDate)
+	t.Description = NullableString(description)
+	t.DueDate = NullableString(dueDate)
 	t.CreatedAt = createdAt
 	t.UpdatedAt = updatedAt
 
@@ -110,9 +106,9 @@ func ScanTaskWithContext(scan func(dest ...any) error) (*TaskWithContext, error)
 	}
 
 	t.SourceID = sourceID
-	t.Description = database.NullableString(description)
-	t.DueDate = database.NullableString(dueDate)
-	t.SourceTitle = database.NullableString(sourceTitle)
+	t.Description = NullableString(description)
+	t.DueDate = NullableString(dueDate)
+	t.SourceTitle = NullableString(sourceTitle)
 	t.CreatedAt = createdAt
 	t.UpdatedAt = updatedAt
 
