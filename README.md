@@ -38,10 +38,10 @@ A desktop application for tracking project bandwidth allocation across weeks. Bu
 
 ## Architecture
 
-- **Backend**: Go with SQLite (modernc.org/sqlite driver)
+- **Backend**: Go with JSON storage
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS + Recharts
 - **Framework**: Wails v2 (native desktop apps with web technologies)
-- **Database**: Local SQLite at `~/Library/Application Support/btrack/btrack.db`
+- **Data Storage**: Local JSON at `~/Library/Application Support/btrack/btrack-data.json`
 
 ## Development
 
@@ -95,12 +95,21 @@ npm run build        # Build frontend assets
 ├── export.go               # CSV export functionality
 ├── reports.go              # Analytics and reporting
 ├── internal/
-│   ├── database/
-│   │   ├── database.go     # SQLite connection setup
-│   │   ├── migrations.go   # Schema and seed data
-│   │   ├── queries.go      # SQL query constants
-│   │   └── scanner.go      # Scanning helpers (ParseTimestamp, EnsureSlice, etc.)
-│   └── models/             # Domain models with Scan methods and validation
+│   ├── store/
+│   │   ├── store.go           # Store with Load/Save and atomic writes
+│   │   ├── types.go           # Data structures (ProjectWithNested, etc.)
+│   │   ├── projects.go        # Project CRUD operations
+│   │   ├── weekly_entries.go  # Weekly entry operations
+│   │   ├── nested_entities.go # Meetings, notes, goals, tasks CRUD
+│   │   ├── search.go          # Cross-project search
+│   │   ├── aggregations.go    # Dashboard, reports, statistics
+│   │   └── templates.go       # Template operations
+│   ├── services/
+│   │   ├── project/           # Project service layer
+│   │   ├── tracking/          # Tracking service (dashboard, reports)
+│   │   ├── notes/             # Notes service (meetings, notes, goals, tasks)
+│   │   └── system/            # System service (backup, export, templates)
+│   └── models/             # Domain models with validation
 └── frontend/
     ├── src/
     │   ├── components/
@@ -124,20 +133,23 @@ npm run build        # Build frontend assets
 
 ### Backend (Go)
 
-**Database Scanning**: Entity models include `Scan` functions that encapsulate row scanning logic:
+**Store Operations**: All CRUD operations go through the Store, which handles locking and persistence:
 ```go
-// ScanMeeting scans a database row into a Meeting struct
-meeting, err := models.ScanMeeting(rows.Scan)
+// Store automatically locks, mutates, saves, and unlocks
+project, err := s.store.CreateProject(input)
+if err != nil {
+  return nil, err
+}
 ```
 
-**Slice Helpers**: Use `database.EnsureSlice()` to prevent nil JSON responses:
-```go
-return database.EnsureSlice(meetings), nil
-```
+**Thread Safety**: Store uses sync.RWMutex for concurrent read/write safety.
 
-**Timestamp Parsing**: Use `database.ParseTimestamp()` for consistent timestamp handling:
+**Empty Slice Handling**: Methods return empty slices instead of nil to prevent frontend errors:
 ```go
-m.CreatedAt = database.ParseTimestamp(createdAt)
+if result == nil {
+  result = []Meeting{}
+}
+return result, nil
 ```
 
 ### Frontend (React/TypeScript)
@@ -168,27 +180,27 @@ const crud = useCrud<Meeting, CreateMeetingInput, UpdateMeetingInput>(config)
 />
 ```
 
-## Database
+## Data Storage
 
 ### Location
-The SQLite database is stored at:
+The JSON data file is stored at:
 ```
-~/Library/Application Support/btrack/btrack.db
+~/Library/Application Support/btrack/btrack-data.json
 ```
 
-### Reset Database (Development)
-To reset the database schema during development:
+### Reset Data (Development)
+To reset the data during development:
 
 ```bash
-rm ~/Library/Application\ Support/btrack/btrack.db
+rm ~/Library/Application\ Support/btrack/btrack-data.json
 ```
 
-The database will be recreated with fresh schema and seeded persistent projects ("Management" and "Internal Projects") on next run.
+The file will be recreated with empty data on next run. Persistent projects can be seeded via the store.
 
 ### Backup & Restore
 Use the built-in backup/restore features in the application:
-- **Backup**: Creates a timestamped copy of the database to a location you choose
-- **Restore**: Restores from a backup file with automatic safety backup (`.pre-restore`) in case of failure
+- **Backup**: Creates a timestamped copy of the JSON file to a location you choose
+- **Restore**: Restores from a backup JSON file with automatic safety backup (`.pre-restore`) in case of failure
 
 ## More Information
 

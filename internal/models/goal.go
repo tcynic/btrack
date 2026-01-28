@@ -105,7 +105,7 @@ type UpdateGoalInput struct {
 // Validate checks if the CreateGoalInput is valid
 func (c *CreateGoalInput) Validate() error {
 	if c.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	return nil
 }
@@ -113,7 +113,7 @@ func (c *CreateGoalInput) Validate() error {
 // Validate checks if the UpdateGoalInput is valid
 func (u *UpdateGoalInput) Validate() error {
 	if u.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	if u.Status != "" && u.Status != GoalStatusPending && u.Status != GoalStatusInProgress && u.Status != GoalStatusCompleted && u.Status != GoalStatusCancelled {
 		return ErrInvalidStatus

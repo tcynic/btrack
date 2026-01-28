@@ -139,7 +139,7 @@ type UpdateTaskInput struct {
 // Validate checks if the CreateTaskInput is valid
 func (c *CreateTaskInput) Validate() error {
 	if c.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	if c.SourceType != "" && !IsValidSourceType(c.SourceType) {
 		return ErrInvalidSourceType
@@ -160,7 +160,7 @@ func (c *CreateTaskInput) Validate() error {
 // Validate checks if the UpdateTaskInput is valid
 func (u *UpdateTaskInput) Validate() error {
 	if u.Title == "" {
-		return ErrTitleRequired
+		return ValidationError("title", "title is required")
 	}
 	if u.Status != "" && !IsValidTaskStatus(u.Status) {
 		return ErrInvalidStatus
